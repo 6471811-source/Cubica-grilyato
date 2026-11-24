@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Калькулятор потолков Грильято CUBICA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://6471811-source.github.io/Cubica-journal/journal-core.js"></script>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;background:#f4f5f7;line-height:1.6;padding:24px 20px 40px}
+.ac{max-width:1280px;margin:0 auto;padding:24px;border:1px solid #e6e6e6;border-radius:12px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.05);display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"w w" "t t" "i i" "s s" "o o" "l p";gap:16px;align-items:start}
+.ac-work{grid-area:w;position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:12px 18px;background:#fff;border:2px solid #cfdcec;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.12);transition:all .3s}
+.ac-work .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.ac-work .badge.draft{background:#fff3cd;color:#856404;border:1px solid #ffeeba}
+.ac-work .badge.editing{background:#cfe2ff;color:#084298;border:1px solid #b6d4fe}
+.ac-work .badge.saved{background:#d1e7dd;color:#0f5132;border:1px solid #badbcc}
+.ac-work .name{font-size:15px;font-weight:800;color:#1a1a2e;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-work .hint{margin-left:auto;font-size:12px;color:#666;font-weight:500;flex-shrink:0}
+.ac-context-hint{grid-area:w;margin-top:-8px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;line-height:1.5;display:flex;align-items:center;gap:10px}
+.ac-context-hint.draft{background:#fff3cd;border:1px solid #ffeeba;color:#856404}
+.ac-context-hint.editing{background:#cfe2ff;border:1px solid #b6d4fe;color:#084298}
+.ac-context-hint.saved{background:#d1e7dd;border:1px solid #badbcc;color:#0f5132}
+.ac-context-hint .ic{font-size:18px;flex-shrink:0}
+.ac-title{grid-area:t;font-size:20px;font-weight:800;color:#1a1a2e;padding-bottom:14px;border-bottom:2px solid #d32f2f;display:flex;align-items:center;gap:12px}
+.ac-title .lg{flex-shrink:0;width:38px;height:38px}
+.ac-title .br{color:#c00000}
+.ac-in{grid-area:i;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:14px 16px;background:#fafafa;border-radius:8px;border:1px solid #eee}
+.ac-in label{font-size:12px;color:#555;font-weight:600;display:flex;flex-direction:column;gap:5px}
+.ac-in input[type=number]{width:110px;padding:9px 10px;border:1px solid #ccc;border-radius:6px;font-size:14px}
+.ac-in button{padding:10px 14px;background:#666;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:600;font-family:inherit;transition:all .15s}
+.ac-in button:hover:not(:disabled){filter:brightness(1.1)}
+.ac-in button:disabled{opacity:.5;cursor:not-allowed}
+.ac-in button.add{background:#2e7d32}.ac-in button.draw{background:#6a1b9a}.ac-in button.upd{background:#1565c0}.ac-in button.rst{background:#777}.ac-in button.kp{background:#c00000}
+
+.ac-options-row{grid-area:o;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;background:#fafafa;border:1px solid #eee;border-radius:8px}
+.ac-options-row .ac-colors-title{margin-right:6px;flex-shrink:0;font-size:10px;font-weight:700;color:#9aa1ac;letter-spacing:.8px;text-transform:uppercase}
+.ac-chk-inline{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:6px;font-size:12.5px;color:#444;cursor:pointer;padding:8px 12px;border:1px solid #ccc;border-radius:6px;background:#fff;user-select:none;height:36px}
+.ac-chk-inline input{accent-color:#d32f2f;margin:0}
+.ac-sel{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#444;padding:0 0 0 10px;border:1px solid #ccc;border-radius:6px;background:#fff;height:36px}
+.ac-sel select,.ac-sel input{border:none;border-left:1px solid #e3e3e3;height:34px;padding:0 8px;font:inherit;font-weight:700;color:#1a1a2e;background:transparent;outline:none;border-radius:0 6px 6px 0}
+.ac-sel input{width:92px}
+.ac-sw{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid #999;vertical-align:middle}
+.ac-hanger-slider{padding:6px 12px;background:#fff;border:1px solid #eee;border-radius:6px;display:flex;align-items:center;gap:10px;transition:opacity .2s;min-width:200px;flex:1 1 260px;max-width:340px}
+.ac-hanger-slider.disabled{opacity:.45;pointer-events:none}
+.ac-hanger-slider .ac-slider-head{font-size:10px;margin-bottom:0;flex:0 0 auto;display:flex;align-items:center;font-weight:700;color:#9aa1ac;letter-spacing:.8px;text-transform:uppercase}
+.ac-hanger-slider input[type=range]{flex:1;height:22px;cursor:pointer;accent-color:#d32f2f}
+.ac-hanger-slider .ac-slider-val{font-size:12.5px;min-width:52px;text-align:right;color:#1a1a2e;font-weight:700;white-space:nowrap}
+
+.ac-lw{grid-area:l;display:grid;grid-template-rows:auto 1fr auto;gap:14px;min-width:0}
+.ac-ts,.ac-bs{display:flex;align-items:center;gap:14px;padding:12px 16px;background:#fafafa;border:1px solid #eee;border-radius:8px}
+.ac-ts label,.ac-bs label{font-size:13px;color:#555;font-weight:600;min-width:200px}
+.ac-ts input[type=range],.ac-bs input[type=range]{flex:1;min-width:120px;cursor:pointer;accent-color:#d32f2f}
+.ac-val{font-weight:700;color:#d32f2f;min-width:120px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.ac-mr{display:grid;grid-template-columns:74px minmax(0,1fr);gap:12px;align-items:stretch;min-width:0}
+.ac-ls{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;background:#fafafa;border:1px solid #eee;border-radius:8px;min-width:0}
+.ac-ls label{font-size:11px;text-align:center;color:#555;font-weight:600;line-height:1.2}
+.ac-ls input[type=range].v{writing-mode:vertical-lr;direction:rtl;-webkit-appearance:slider-vertical;appearance:slider-vertical;width:8px;flex:1;min-height:220px;cursor:pointer;accent-color:#d32f2f;margin:0}
+.ac-ls .ac-val{font-size:11px;min-width:auto;text-align:center;color:#d32f2f;font-weight:700}
+.ac-v{min-width:0}
+.ac-vr{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.ac-vt{display:inline-flex;background:#f0f0f0;border-radius:8px;padding:4px;border:1px solid #e0e0e0}
+.ac-vt button{background:transparent;border:none;padding:8px 18px;font-size:13px;font-weight:600;color:#666;border-radius:6px;cursor:pointer;font-family:inherit}
+.ac-vt button.active{background:#fff;color:#d32f2f;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.ac-cb-btn{padding:7px 14px;font-size:12px;font-weight:600;border:1px solid #ddd;background:#fff;color:#333;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+.ac-cb-btn:hover{background:#f5f5f5}
+.ac-cb-btn.active{background:#d32f2f;color:#fff;border-color:#d32f2f}
+
+.ac-lay{text-align:center;margin-bottom:14px}
+.ac-lay svg{max-width:100%;height:auto;display:block;margin:0 auto;border-radius:8px}
+.ac-l3{position:relative;margin-bottom:14px}
+.ac-l3 canvas{display:block;max-width:100%;height:auto;margin:0 auto;border-radius:8px;background:#f0f2f5;cursor:grab;touch-action:none}
+.ac-tb{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-top:10px;padding:10px 12px;background:#fafafa;border:1px solid #eee;border-radius:8px}
+.ac-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#444;cursor:pointer;padding:4px 8px;border-radius:5px}
+.ac-chk input{accent-color:#d32f2f}
+.ac-cb{padding:6px 12px;font-size:12px;font-weight:600;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.ac-cb.pr{background:#c00000;color:#fff;border-color:#c00000}
+.ac-hint{text-align:center;font-size:11.5px;color:#999;margin-top:8px}
+
+.ac-pn{grid-area:p;background:#fafafa;border:1px solid #eee;border-radius:10px;padding:18px 20px;align-self:start;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow-y:auto}
+.ac-ph{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:2px solid #d32f2f;padding-bottom:10px;margin-bottom:14px}
+.ac-pt{margin:0;font-size:13px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:1px}
+.ac-st{display:inline-flex;background:#f0f0f0;border-radius:6px;padding:3px;border:1px solid #e0e0e0}
+.ac-st button{background:transparent;border:none;padding:5px 10px;font-size:11px;font-weight:600;color:#666;border-radius:4px;cursor:pointer;font-family:inherit}
+.ac-st button.active{background:#fff;color:#c00000}
+.ac-res{font-size:13.5px;line-height:1.6;color:#333}
+.ac-res ul{list-style:none;padding:0;margin:0}
+.ac-res li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed #e6e6e6}
+.ac-res li:last-child{border-bottom:none}
+.ac-res .cl{display:inline-block;width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.ac-res .lb{flex:1;color:#555}
+.ac-res .vl{font-weight:700;color:#1a1a2e;white-space:nowrap;text-align:right}
+.ac-note{margin-top:14px;padding-top:12px;border-top:1px solid #eee;font-size:11.5px;color:#888;line-height:1.5}
+.ac-note.warn{color:#b26a00;background:#fff8e5;border:1px solid #f0d896;border-radius:6px;padding:10px 12px;margin-top:12px}
+.ac-note.info{color:#1565c0;background:#eef4fb;border:1px solid #cfdcec;border-radius:6px;padding:10px 12px;margin-top:12px}
+.ac-pj{margin-top:16px;padding-top:14px;border-top:1px solid #e6e6e6}
+.ac-pjt{font-size:12px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.ac-pjt small{font-weight:600;color:#888;font-size:11px;text-transform:none;letter-spacing:0}
+.ac-pjl{list-style:none;padding:0;margin:0 0 10px 0}
+.ac-pji{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid #eee;border-radius:6px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.ac-pji:hover{border-color:#d0d0d0;background:#fafafa}
+.ac-pji.active{background:#fff5f5;border-color:#f0c0c0;box-shadow:inset 3px 0 0 #c00000}
+.ac-pjn{font-size:12.5px;font-weight:700;color:#1a1a2e}
+.ac-pjd{flex:1;font-size:11.5px;color:#888;text-align:right}
+.ac-pjx{background:transparent;border:none;color:#999;font-size:14px;cursor:pointer;padding:2px 6px;border-radius:4px;font-family:inherit;line-height:1}
+.ac-pjx:hover{background:#ffe5e5;color:#c00000}
+.ac-pje{font-size:12px;color:#999;text-align:center;padding:10px 0;font-style:italic}
+.ac-pja{display:flex;gap:8px;justify-content:flex-end}
+.ac-pja button{padding:6px 12px;font-size:11.5px;font-weight:600;border:1px solid #ddd;background:#fff;color:#555;border-radius:6px;cursor:pointer;font-family:inherit}
+.ac-pja button:hover{background:#f5f5f5}
+.ac-pja button.dg{color:#c00000;border-color:#f0c0c0}
+.ac-pja button.dg:hover{background:#fff0f0}
+.ft{max-width:1280px;margin:20px auto 0;color:#888;font-size:12px;text-align:center}
+.ac-modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(15,15,25,.72);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px}
+.ac-modal.open{display:flex}
+.ac-modal-inner{background:#fff;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:1100px;width:100%;padding:20px;display:flex;flex-direction:column;gap:12px;max-height:96vh;overflow:auto}
+.ac-modal-title{margin:0;font-size:15px;font-weight:800;color:#1a1a2e}
+.ac-modal-hint{font-size:12px;color:#888;margin:0}
+.ac-draw-hud{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px 14px;background:#fafafa;border:1px solid #eee;border-radius:8px;flex:0 0 auto}
+.ac-draw-mode{font-size:13px;font-weight:700;color:#6a1b9a}
+.ac-draw-length-wrap{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#555}
+.ac-draw-length-wrap label{font-weight:600}
+.ac-draw-length-wrap input{width:100px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:14px;font-family:inherit;text-align:right}
+.ac-draw-length-wrap input:focus{outline:none;border-color:#c00000}
+.ac-draw-body{display:flex;flex-direction:row;gap:12px;align-items:stretch;flex:0 0 auto;min-height:0}
+.ac-draw-wrap{position:relative;background:#fafafa;border:1px solid #e6e6e6;border-radius:8px;overflow:hidden;aspect-ratio:900/520;flex:1 1 0;min-width:0;align-self:flex-start}
+.ac-draw-canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;background:#fff}
+.ac-seg-list{flex:0 0 240px;width:240px;overflow-y:auto;border:1px solid #eee;border-radius:8px;padding:8px;background:#fafafa;display:flex;flex-direction:column;gap:6px}
+.ac-seg-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#444}
+.ac-seg-row .arrow{width:26px;text-align:center;font-weight:800;color:#c00000;font-size:16px}
+.ac-seg-row .lbl{flex:1;color:#777;font-size:12px}
+.ac-seg-row input{width:110px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12.5px;font-family:inherit;text-align:right}
+.ac-seg-row input:focus{outline:none;border-color:#d32f2f}
+.ac-seg-empty{font-size:12px;color:#999;text-align:center;padding:6px 0;font-style:italic}
+.ac-modal-bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;flex:0 0 auto}
+.ac-modal-bar button{padding:9px 16px;font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;font-family:inherit;border:1px solid #ddd;background:#fff;color:#333}
+.ac-modal-bar button:hover{background:#f5f5f5}
+.ac-modal-bar button.pr{background:#c00000;color:#fff;border-color:#c00000}
+.ac-modal-bar button.pr:hover{background:#a00000}
+.ac-modal-bar button.dg{color:#c00000;border-color:#f0c0c0}
+.ac-modal-bar button.dg:hover{background:#fff0f0}
+.ac-modal-bar button:disabled{opacity:.45;cursor:not-allowed}
+.ac-modal-bar-group{display:flex;gap:8px;flex-wrap:wrap}
+.ac-modal-warn{position:absolute;left:12px;right:12px;top:12px;padding:8px 12px;border-radius:6px;font-size:12px;line-height:1.5;display:none;background:rgba(255,248,229,0.96);border:1px solid #f0d896;color:#b26a00;z-index:5;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.ac-modal-warn.show{display:block}
+.ac-modal-warn.err{background:rgba(255,235,235,0.96);border-color:#f0a0a0;color:#a00000}
+.ac-toast{position:fixed;left:50%;top:24px;transform:translateX(-50%);background:#2e7d32;color:#fff;padding:14px 26px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:3000;display:none;font-family:'Segoe UI',Roboto,Arial,sans-serif;max-width:90vw;text-align:center}
+.ac-toast.show{display:block;animation:acToastIn .3s ease-out}
+@keyframes acToastIn{from{transform:translateX(-50%) translateY(-30px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+@media(max-width:1024px){.ac{grid-template-columns:1fr;grid-template-areas:"w" "t" "i" "s" "o" "l" "p"}.ac-pn{position:static;max-height:none}.ac-ts label,.ac-bs label{min-width:auto}.ac-val{min-width:auto}}
+@media(max-width:700px){.ac-draw-body{flex-direction:column}.ac-draw-wrap{width:100%;align-self:stretch}.ac-seg-list{flex:0 0 auto;width:100%;max-height:180px}}
+@media(max-width:640px){.ac{padding:16px}.ac-mr{grid-template-columns:60px minmax(0,1fr)}.ac-ts,.ac-bs{flex-wrap:wrap}.ac-ts label,.ac-bs label{min-width:100%}.ac-in input[type=number]{width:100%}.ac-in button{margin-left:0}.ac-modal{padding:8px}.ac-modal-inner{padding:14px}}
+</style></head><body>
+<main>
+<div class="ac">
+<div class="ac-work" id="ac-work-label"><span class="badge draft" id="ac-work-badge">🟡 ЧЕРНОВИК</span><span class="name" id="ac-work-text">Новое помещение</span><span class="hint" id="ac-work-hint">Настройте параметры</span></div>
+<div class="ac-context-hint draft" id="ac-context-hint"><span class="ic">💡</span><span id="ac-context-text">Это новое помещение. Нажмите «💾 Сохранить изменения», чтобы добавить его к другим.</span></div>
+<div class="ac-title">
+<svg class="lg" viewBox="0 0 220 220"><defs><clipPath id="lgc"><path d="M30,30 H190 V70 H70 V150 H190 V190 H30 Z"/></clipPath></defs><g clip-path="url(#lgc)"><g stroke="#c00000" stroke-width="20"><line x1="-10" y1="30" x2="30" y2="-10"/><line x1="-10" y1="70" x2="70" y2="-10"/><line x1="-10" y1="110" x2="110" y2="-10"/><line x1="-10" y1="150" x2="150" y2="-10"/><line x1="-10" y1="190" x2="190" y2="-10"/><line x1="-10" y1="230" x2="230" y2="-10"/><line x1="10" y1="230" x2="230" y2="10"/><line x1="50" y1="230" x2="230" y2="50"/><line x1="90" y1="230" x2="230" y2="90"/><line x1="130" y1="230" x2="230" y2="130"/><line x1="170" y1="230" x2="230" y2="170"/></g></g></svg>
+<span>Калькулятор потолков Грильято <span class="br">CUBICA</span></span>
+</div>
+<div class="ac-in">
+<label>Длина, мм<input type="number" id="ac-length" value="7350" step="100" min="100"></label>
+<label>Ширина, мм<input type="number" id="ac-width" value="5600" step="100" min="100"></label>
+<button type="button" class="draw" id="ac-draw-open">✏️ Начертить</button>
+<button type="button" class="upd" id="ac-update-room">💾 Сохранить изменения</button>
+<button type="button" class="add" id="ac-add-to-project">+ Новое помещение</button>
+<button type="button" class="kp" id="ac-kp-open">📤 Коммерческое предложение</button>
+<button type="button" class="rst" id="ac-reset">↺ Отменить изменения</button>
+</div>
+<div class="ac-options-row">
+<div class="ac-colors-title">Опции</div>
+<label class="ac-sel">Система<select id="gr-sys"><option value="gl15">GL15 (Т-профиль 15 мм)</option><option value="cl27">Классический, 27 мм</option><option value="cl40">Классический, 40 мм</option></select></label>
+<label class="ac-sel">Ячейка<select id="gr-cell"><option value="50">50×50</option><option value="75">75×75</option><option value="100" selected>100×100</option><option value="120">120×120</option><option value="150">150×150</option><option value="200">200×200</option></select></label>
+<label class="ac-sel"><span class="ac-sw" id="gr-color-sw"></span>Цвет<select id="gr-color"><option value="9003">RAL 9003 белый</option><option value="7004">RAL 7004 серый</option><option value="9005">RAL 9005 чёрный</option><option value="ral">RAL под заказ</option></select></label>
+<label class="ac-sel" id="gr-ral-wrap" style="display:none">RAL<input type="text" id="gr-ral" placeholder="напр. 1015" maxlength="12"></label>
+<span style="display:none"><input type="checkbox" id="ac-tile-1200"><input type="checkbox" id="ac-frame-rigid"></span>
+<label class="ac-chk-inline"><input type="checkbox" id="ac-hangers" checked> Подвесы</label>
+<div class="ac-hanger-slider" id="ac-hanger-slider-wrap">
+<div class="ac-slider-head"><span>Высота</span></div>
+<input type="range" id="ac-hanger-h" min="0" max="3" step="0.01" value="0">
+<span class="ac-slider-val" id="ac-hanger-h-val">0,00 м</span>
+</div>
+</div>
+<div class="ac-lw">
+<div class="ac-ts"><label>Смещение влево-вправо (← →)</label><input type="range" id="ac-offset-x" min="-1200" max="1200" step="50" value="0"><span class="ac-val" id="ac-offset-x-val">0 мм</span></div>
+<div class="ac-mr">
+<div class="ac-ls"><label>Смещение вверх-вниз (↑ ↓)</label><input type="range" id="ac-offset-y" class="v" orient="vertical" min="-1200" max="1200" step="50" value="0"><span class="ac-val" id="ac-offset-y-val">0 мм</span></div>
+<div class="ac-v">
+<div class="ac-vr">
+<div class="ac-vt"><button type="button" class="active" data-view="2d">2D · Схема</button><button type="button" data-view="3d">3D · Объём</button></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
+<button type="button" class="ac-cb-btn" id="ac-rotate90">↻ Повернуть на 90°</button>
+<button type="button" class="ac-cb-btn" id="ac-standard">📐 Техкарта 132-06 ТК</button>
+</div>
+</div>
+<div class="ac-lay" id="ac-layout"></div>
+<div class="ac-l3" id="ac-layout3d" style="display:none;"><canvas id="ac-canvas3d" width="640" height="440"></canvas></div>
+<div class="ac-tb">
+<label class="ac-chk"><input type="checkbox" id="ac-show-tiles" checked> Решётки</label>
+<label class="ac-chk"><input type="checkbox" id="ac-show-ceiling"> Перекрытие</label>
+<button type="button" class="ac-cb" id="ac-cam-reset">⟲ Камера</button>
+<button type="button" class="ac-cb pr" id="ac-save-2d">📄 2D (PDF)</button>
+<button type="button" class="ac-cb pr" id="ac-save-3d">📄 3D (PDF)</button>
+</div>
+<div class="ac-hint">3D: ЛКМ — вращение · колесо — зум · ПКМ — перенос</div>
+</div>
+</div>
+<div class="ac-bs"><label>Поворот раскладки</label><input type="range" id="ac-rotation" min="-45" max="45" step="5" value="0"><span class="ac-val" id="ac-rotation-val">0°</span></div>
+</div>
+<aside class="ac-pn" id="ac-panel">
+<div class="ac-ph">
+<h4 class="ac-pt">Спецификация</h4>
+<div class="ac-st" id="ac-spec-toggle"><button type="button" data-specmode="current" class="active">Помещение</button><button type="button" data-specmode="total">Итог</button></div>
+</div>
+<div class="ac-res" id="ac-results"></div>
+<div class="ac-pj">
+<div class="ac-pjt"><span>Проект CUBICA.BY</span><small><span id="ac-project-count">0</span> помещ.</small></div>
+<ul class="ac-pjl" id="ac-project-list"></ul>
+<div class="ac-pja"><button type="button" class="dg" id="ac-project-clear">Очистить проект</button></div>
+</div>
+</aside>
+</div>
+</main>
+<footer class="ft">© 2026 CUBICA.BY · Потолок Грильято</footer>
+
+<div class="ac-modal" id="ac-draw-modal">
+<div class="ac-modal-inner">
+<h3 class="ac-modal-title">✏️ Начертить помещение</h3>
+<p class="ac-modal-hint">Клик — ставит точку. Ведите мышь: пунктир показывает будущую стену. Клик по первой точке (зелёное кольцо) — замкнуть контур.</p>
+<div class="ac-draw-hud">
+<div class="ac-draw-mode" id="ac-draw-mode">Кликните, чтобы задать первую точку</div>
+<div class="ac-draw-length-wrap">
+<label for="ac-draw-length-input">Длина:</label>
+<input type="number" id="ac-draw-length-input" placeholder="авто" min="100" step="100">
+<span>мм</span>
+</div>
+</div>
+<div class="ac-draw-body">
+<div class="ac-draw-wrap">
+<canvas id="ac-draw-canvas" class="ac-draw-canvas" width="900" height="520"></canvas>
+<div class="ac-modal-warn" id="ac-modal-warn"></div>
+</div>
+<div class="ac-seg-list" id="ac-seg-list"></div>
+</div>
+<div class="ac-modal-bar">
+<div class="ac-modal-bar-group">
+<button type="button" id="ac-draw-undo">↶ Отменить стену</button>
+<button type="button" id="ac-draw-close-contour">🔒 Замкнуть контур</button>
+<button type="button" class="dg" id="ac-draw-clear">Очистить</button>
+</div>
+<div class="ac-modal-bar-group">
+<button type="button" id="ac-draw-cancel">Отмена</button>
+<button type="button" class="pr" id="ac-draw-apply" disabled>Применить</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="ac-modal" id="ac-unsaved-modal"><div class="ac-modal-inner" style="max-width:460px"><h3 class="ac-modal-title">Несохранённые изменения</h3><p class="ac-modal-hint" id="ac-unsaved-text">В текущем помещении есть несохранённые изменения.</p><div class="ac-modal-bar" style="justify-content:flex-end;margin-top:8px"><button type="button" id="ac-unsaved-cancel">Отмена</button><button type="button" id="ac-unsaved-discard" class="dg">Не сохранять</button><button type="button" id="ac-unsaved-save" class="pr">Сохранить</button></div></div></div>
+<div class="ac-toast" id="ac-toast"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+(function(){
+const $=id=>document.getElementById(id);
+const lengthInput=$('ac-length'),widthInput=$('ac-width');
+const offsetXSlider=$('ac-offset-x'),offsetYSlider=$('ac-offset-y'),rotationSlider=$('ac-rotation');
+const offsetXVal=$('ac-offset-x-val'),offsetYVal=$('ac-offset-y-val'),rotationVal=$('ac-rotation-val');
+const resetBtn=$('ac-reset'),addBtn=$('ac-add-to-project'),updateBtn=$('ac-update-room');
+const drawOpenBtn=$('ac-draw-open'),kpBtn=$('ac-kp-open');
+const resultsDiv=$('ac-results'),layout2dDiv=$('ac-layout'),layout3dDiv=$('ac-layout3d');
+const toggleBtns=document.querySelectorAll('.ac-vt button');
+const rotate90Btn=$('ac-rotate90'),standardBtn=$('ac-standard');
+const camResetBtn=$('ac-cam-reset'),save2dBtn=$('ac-save-2d'),save3dBtn=$('ac-save-3d');
+const showTilesChk=$('ac-show-tiles'),showCeilingChk=$('ac-show-ceiling');
+const hangersChk=$('ac-hangers'),hangerHInput=$('ac-hanger-h'),hangerHVal=$('ac-hanger-h-val'),hangerSliderWrap=$('ac-hanger-slider-wrap');
+const tile1200Chk=$('ac-tile-1200'),frameRigidChk=$('ac-frame-rigid');
+const specToggleEl=$('ac-spec-toggle');
+const grSysSel=$('gr-sys'),grCellSel=$('gr-cell'),grColorSel=$('gr-color'),grRalInput=$('gr-ral'),grRalWrap=$('gr-ral-wrap'),grColorSw=$('gr-color-sw');
+const GR_SYS_NAME={gl15:'GL15',cl27:'Классический 27 мм',cl40:'Классический 40 мм'};
+const GR_COLOR_HEX={'9003':'#f4f4ee','7004':'#9b9b9b','9005':'#151515','ral':'#c9a86a'};
+const GR_COLOR_NAME={'9003':'RAL 9003','7004':'RAL 7004','9005':'RAL 9005','ral':'RAL'};
+function grState(){ return {grSys:grSysSel.value||'gl15', grCell:parseInt(grCellSel.value,10)||100, grColor:grColorSel.value||'9003', grRal:(grRalInput.value||'').trim()}; }
+function grApplyState(r){ if(!r) return; if(r.grSys) grSysSel.value=r.grSys; if(r.grCell) grCellSel.value=String(r.grCell); if(r.grColor) grColorSel.value=r.grColor; grRalInput.value=r.grRal||''; syncGrUI(); }
+function syncGrUI(){ grRalWrap.style.display = grColorSel.value==='ral' ? '' : 'none'; grColorSw.style.background = GR_COLOR_HEX[grColorSel.value]||'#fff'; }
+function grColorText(st){ return st.grColor==='ral' ? ('RAL '+(st.grRal||'под заказ')) : GR_COLOR_NAME[st.grColor]; }
+// мам и пап в одной решётке 600×600 (и столько же каждого): 50→11, 75→7, 100→5, 120→4, 150→3, 200→2
+function grPerGrid(cell){ const C=window.CubicaJournal; if(C&&C.GR&&C.GR.perGrid) return C.GR.perGrid(cell); return Math.max(1,Math.round(600/(Number(cell)||100))-1); }
+// Название строки = эталонное название роли в ядре (по нему роль и находится)
+function grLabel(key, fallback){ const C=window.CubicaJournal; const d=C&&C.roleDef?C.roleDef(key):null; return d&&d.def ? d.def : (fallback||key); }
+// Строки, у которых цвет «RAL под заказ» — к названию в счёте добавляем номер RAL
+function grRalSuffix(label, st){ if(!st || st.grColor!=='ral' || !st.grRal) return ''; return /RAL под заказ/.test(label) ? ' (RAL '+st.grRal+')' : ''; }
+const projectListEl=$('ac-project-list'),projectCountEl=$('ac-project-count'),projectClearBtn=$('ac-project-clear');
+
+const TILE_CELL=600,TILE_PANEL=598;
+let MAIN_LENGTH=3600; // GL15 — несущий 3600, классика — направляющая 2400
+const HANGER_SPACING=1200,HANGER_WALL_MAX=300,ANGLE_WALL_SPACING=300;
+const COL_MAIN_HEX=0xd32f2f,COL_1200_HEX=0x1976d2,COL_600_HEX=0x43a047,COL_JOINT_HEX=0xffd54f;
+const FLANGE_H=0.004,FLANGE_W=0.015,WEB_H=0.026,WEB_W=0.005,PLATE_T=0.012;
+const FALL_TOTAL_MS=3000,FALL_ITEM_MS=1100,FALL_HEIGHT_MIN=2.0,FALL_HEIGHT_MAX=3.5;
+const WALL_TOL=1,MIN_VISIBLE=0.5;
+const CUBICA_RED='#c00000',CUBICA_RED_RGB=[192,0,0];
+
+const KP_URL='https://6471811-source.github.io/Cubica-i5/';
+
+/* ===== Роли → позиции 1С (настраиваются в журнале: «Справочник → Роли → Грильято»; подвесы и крепёж — общие с Армстронгом) ===== */
+var ARM_ROLES = { map: {} };
+function armCJ(){ const C = window.CubicaJournal; return (C && typeof C.roleByLabel === 'function') ? C : null; }
+function armRoleOf(label){ const C = armCJ(); return C ? C.roleByLabel('grilyato', label) : null; }
+function armBinding(label){ const k = armRoleOf(label); return k ? (ARM_ROLES.map[k] || null) : null; }
+function armShownLabel(label){ const b = armBinding(label); return b && b.name ? b.name : label; }
+function armReloadRoles(){ const C = armCJ(); if(!C) return; ARM_ROLES.map = C.rolesMap() || {}; try{ if(typeof renderSpec === 'function') renderSpec(); }catch(e){} }
+(function(){
+  const C = armCJ(); if(!C) return;
+  ARM_ROLES.map = C.rolesMap() || {};
+  if(C.isApi()) C.catalogSync().then(armReloadRoles).catch(()=>{});
+  if(C.on) C.on('catalog-changed', armReloadRoles);
+})();
+const SHORT_URL='https://cubica-kp-15ab.6471811.workers.dev';
+
+const urlParams = new URLSearchParams(location.search);
+const JID = urlParams.get('jid');
+let currentRecordId = null;
+let lastSavedSnapshot = null;
+
+function snapshotKey(snap){
+  if(!snap) return '';
+  const copy = {...snap};
+  delete copy.name;
+  return JSON.stringify(copy);
+}
+function hasUnsavedChanges(){
+  if(activeRoomIndex === null){
+    return true;
+  }
+  if(!currentLayout) return false;
+  if(!lastSavedSnapshot) return false;
+  const cur = snapshotKey(snapshotRoom());
+  return cur !== lastSavedSnapshot;
+}
+
+function askUnsavedChanges(roomName){
+  return new Promise(resolve => {
+    const modal = $('ac-unsaved-modal');
+    const text = $('ac-unsaved-text');
+    text.textContent = 'В помещении «' + roomName + '» есть несохранённые изменения. Сохранить?';
+    modal.classList.add('open');
+    const cleanup = () => {
+      modal.classList.remove('open');
+      $('ac-unsaved-save').removeEventListener('click', onSave);
+      $('ac-unsaved-discard').removeEventListener('click', onDiscard);
+      $('ac-unsaved-cancel').removeEventListener('click', onCancel);
+    };
+    const onSave = () => { cleanup(); resolve('save'); };
+    const onDiscard = () => { cleanup(); resolve('discard'); };
+    const onCancel = () => { cleanup(); resolve('cancel'); };
+    $('ac-unsaved-save').addEventListener('click', onSave);
+    $('ac-unsaved-discard').addEventListener('click', onDiscard);
+    $('ac-unsaved-cancel').addEventListener('click', onCancel);
+  });
+}
+
+function showToast(msg,color){
+  const t=$('ac-toast');if(!t)return;
+  t.textContent=msg;t.style.background=color||'#2e7d32';
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t=setTimeout(()=>t.classList.remove('show'),4000);
+}
+
+function updateWorkLabel(){
+  const badge=$('ac-work-badge'),nameEl=$('ac-work-text'),hintEl=$('ac-work-hint');
+  const contextHint=$('ac-context-hint'),contextText=$('ac-context-text');
+  if(!badge||!nameEl)return;
+
+  if(activeRoomIndex === null){
+    badge.textContent = '🟡 ЧЕРНОВИК'; badge.className = 'badge draft';
+    nameEl.textContent = 'Новое помещение (не сохранено)'; hintEl.textContent = 'Ещё не в проекте';
+    contextHint.className = 'ac-context-hint draft';
+    contextText.innerHTML = 'Это <b>новое помещение</b>. Нажмите «💾 Сохранить изменения», чтобы добавить его к другим.';
+    contextHint.querySelector('.ic').textContent = '💡';
+  } else if(hasUnsavedChanges()){
+    badge.textContent = '🔵 РЕДАКТИРОВАНИЕ'; badge.className = 'badge editing';
+    nameEl.textContent = project[activeRoomIndex].name; hintEl.textContent = '⚠ есть несохранённые изменения';
+    contextHint.className = 'ac-context-hint editing';
+    contextText.innerHTML = 'Вы редактируете <b>' + escapeHtml(project[activeRoomIndex].name) + '</b>. Изменения ещё не сохранены. Нажмите «💾 Сохранить изменения» или «+ Новое помещение» (сохранит и создаст новое).';
+    contextHint.querySelector('.ic').textContent = '✏️';
+  } else {
+    badge.textContent = '🟢 СОХРАНЕНО'; badge.className = 'badge saved';
+    nameEl.textContent = project[activeRoomIndex].name; hintEl.textContent = 'Всё сохранено';
+    contextHint.className = 'ac-context-hint saved';
+    contextText.innerHTML = 'Вы редактируете <b>' + escapeHtml(project[activeRoomIndex].name) + '</b>. Все изменения сохранены. Нажмите «+ Новое помещение», чтобы создать следующее.';
+    contextHint.querySelector('.ic').textContent = '✓';
+  }
+
+  const hasChanges = hasUnsavedChanges();
+  if(updateBtn){
+    updateBtn.style.display = '';
+    updateBtn.disabled = !hasChanges;
+    updateBtn.style.opacity = hasChanges ? '1' : '0.5';
+    if (activeRoomIndex === null) updateBtn.textContent = '💾 Добавить в проект';
+    else updateBtn.textContent = '💾 Сохранить изменения';
+  }
+  if(addBtn){
+    addBtn.disabled = hasChanges;
+    addBtn.style.opacity = hasChanges ? '0.5' : '1';
+  }
+}
+
+function syncHangerUI(){
+  const on = !!hangersChk.checked;
+  hangerHInput.disabled = !on;
+  hangerSliderWrap.classList.toggle('disabled', !on);
+  const v = parseFloat(hangerHInput.value) || 0;
+  hangerHVal.textContent = v.toFixed(2).replace('.', ',') + ' м';
+}
+
+function resetForNewRoom(){
+  const savedOffsetX = offsetXSlider.value;
+  const savedOffsetY = offsetYSlider.value;
+  const savedRotation = rotationSlider.value;
+  const savedStandard = standardMode;
+  const savedHangers = hangersChk.checked;
+  const savedHangerH = hangerHInput.value;
+  const savedTile1200 = tile1200Chk.checked;
+  const savedFrameRigid = frameRigidChk.checked;
+
+  lengthInput.value=7350;
+  widthInput.value=5600;
+  offsetXSlider.value=savedOffsetX;
+  offsetYSlider.value=savedOffsetY;
+  rotationSlider.value=savedRotation;
+  standardMode=savedStandard;
+  standardBtn.classList.toggle('active',standardMode);
+  rotated90=false;
+  rotate90Btn.classList.remove('active');
+  hangersChk.checked = savedHangers;
+  hangerHInput.value = savedHangerH;
+  tile1200Chk.checked = savedTile1200;
+  frameRigidChk.checked = savedFrameRigid;
+  syncHangerUI();
+  updateLabels();
+
+  roomPolygon=null;
+  activeRoomIndex=null;
+  lastSavedSnapshot = null;
+  calculate();
+  renderProjectList();
+  updateWorkLabel();
+}
+
+function saveRoomSilent(){
+  if(!currentLayout)return null;
+  const snap=snapshotRoom();
+  if(activeRoomIndex===null){
+    snap.name='Помещение '+(project.length+1);
+    project.push(snap);
+    activeRoomIndex=project.length-1;
+    lastSavedSnapshot = snapshotKey(snap);
+    return {status:'added',name:snap.name};
+  }else{
+    snap.name=project[activeRoomIndex].name;
+    project[activeRoomIndex]=snap;
+    lastSavedSnapshot = snapshotKey(snap);
+    return {status:'saved',name:snap.name};
+  }
+}
+
+async function newRoomAction(){
+  if(!currentLayout){alert('Сначала расчёт.');return;}
+  if(hasUnsavedChanges()){
+    showToast('Сначала сохраните текущие изменения!', '#c00000');
+    return;
+  }
+  resetForNewRoom();
+  renderProjectList();
+  showToast('Создано новое помещение', '#1565c0');
+}
+function saveRoomExplicit(){
+  if(!currentLayout){alert('Сначала расчёт.');return;}
+  const result=saveRoomSilent();
+  if(!result){alert('Не удалось сохранить.');return;}
+  renderProjectList();
+  renderSpec();
+  updateWorkLabel();
+  if(result.status==='added') showToast('✓ '+result.name+' добавлено в проект');
+  else showToast('✓ '+result.name+' — изменения сохранены');
+}
+
+function escapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+// ===== ГЕОМЕТРИЯ =====
+function polyBBox(poly){let xmin=Infinity,ymin=Infinity,xmax=-Infinity,ymax=-Infinity;for(const p of poly){if(p[0]<xmin)xmin=p[0];if(p[0]>xmax)xmax=p[0];if(p[1]<ymin)ymin=p[1];if(p[1]>ymax)ymax=p[1];}return{xmin,ymin,xmax,ymax,W:xmax-xmin,H:ymax-ymin};}
+function normalizePoly(poly){const b=polyBBox(poly);return poly.map(p=>[p[0]-b.xmin,p[1]-b.ymin]);}
+function polyArea(poly){let s=0;for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length];s+=a[0]*b[1]-b[0]*a[1];}return Math.abs(s)/2;}
+function polyPerimeter(poly){let p=0;for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length];p+=Math.hypot(b[0]-a[0],b[1]-a[1]);}return p;}
+function xIntervalsAtY(poly,y){const xs=[],n=poly.length;for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];if(Math.abs(a[0]-b[0])<1e-6){const y1=Math.min(a[1],b[1]),y2=Math.max(a[1],b[1]);if(y>=y1-0.01&&y<y2-0.01) xs.push(a[0]);}}xs.sort((p,q)=>p-q);const out=[];for(let i=0;i+1<xs.length;i+=2){const x1=xs[i],x2=xs[i+1];if(x2-x1>0.05) out.push([x1,x2]);}return out;}
+function yIntervalsAtX(poly,x){const ys=[],n=poly.length;for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];if(Math.abs(a[1]-b[1])<1e-6){const x1=Math.min(a[0],b[0]),x2=Math.max(a[0],b[0]);if(x>=x1-0.01&&x<x2-0.01) ys.push(a[1]);}}ys.sort((p,q)=>p-q);const out=[];for(let i=0;i+1<ys.length;i+=2){const y1=ys[i],y2=ys[i+1];if(y2-y1>0.05) out.push([y1,y2]);}return out;}
+function clipSegToPoly(poly,x1,y1,x2,y2){const out=[];if(Math.abs(y1-y2)<0.01){const ints=xIntervalsAtY(poly,(y1+y2)/2);const a=Math.min(x1,x2),b=Math.max(x1,x2);for(const [p,q] of ints){const lo=Math.max(a,p),hi=Math.min(b,q);if(hi-lo>0.05) out.push([lo,y1,hi,y1]);}}else if(Math.abs(x1-x2)<0.01){const ints=yIntervalsAtX(poly,(x1+x2)/2);const a=Math.min(y1,y2),b=Math.max(y1,y2);for(const [p,q] of ints){const lo=Math.max(a,p),hi=Math.min(b,q);if(hi-lo>0.05) out.push([x1,lo,x1,hi]);}}else{out.push([x1,y1,x2,y2]);}return out;}
+function segOnPolyWall(poly,x1,y1,x2,y2){const n=poly.length;if(Math.abs(y1-y2)<0.01){for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];if(Math.abs(a[1]-b[1])<0.01&&Math.abs(a[1]-y1)<WALL_TOL){const pmin=Math.min(a[0],b[0]),pmax=Math.max(a[0],b[0]);const smin=Math.min(x1,x2),smax=Math.max(x1,x2);if(Math.abs(pmin-smin)<WALL_TOL&&Math.abs(pmax-smax)<WALL_TOL) return true;}}}else if(Math.abs(x1-x2)<0.01){for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];if(Math.abs(a[0]-b[0])<0.01&&Math.abs(a[0]-x1)<WALL_TOL){const pmin=Math.min(a[1],b[1]),pmax=Math.max(a[1],b[1]);const smin=Math.min(y1,y2),smax=Math.max(y1,y2);if(Math.abs(pmin-smin)<WALL_TOL&&Math.abs(pmax-smax)<WALL_TOL) return true;}}}return false;}
+function pointInPoly(poly,px,py){let inside=false,n=poly.length;for(let i=0,j=n-1;i<n;j=i++){const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];const inter=((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi);if(inter)inside=!inside;}return inside;}
+
+// ===== ЛОГОТИП И PDF =====
+const LOGO_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="440" height="440"><defs><clipPath id="cc"><path d="M30,30 H190 V70 H70 V150 H190 V190 H30 Z"/></clipPath></defs><rect width="220" height="220" fill="#ffffff"/><g clip-path="url(#cc)"><g stroke="'+CUBICA_RED+'" stroke-width="20"><line x1="-10" y1="30" x2="30" y2="-10"/><line x1="-10" y1="70" x2="70" y2="-10"/><line x1="-10" y1="110" x2="110" y2="-10"/><line x1="-10" y1="150" x2="150" y2="-10"/><line x1="-10" y1="190" x2="190" y2="-10"/><line x1="-10" y1="230" x2="230" y2="-10"/><line x1="10" y1="230" x2="230" y2="10"/><line x1="50" y1="230" x2="230" y2="50"/><line x1="90" y1="230" x2="230" y2="90"/><line x1="130" y1="230" x2="230" y2="130"/><line x1="170" y1="230" x2="230" y2="170"/></g></g></svg>';
+function svgStringToPngDataURL(svgString,w,h,keepTransparent){return new Promise((resolve,reject)=>{const blob=new Blob([svgString],{type:'image/svg+xml;charset=utf-8'});const url=URL.createObjectURL(blob);const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');if(!keepTransparent){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h);}ctx.drawImage(img,0,0,w,h);URL.revokeObjectURL(url);resolve(c.toDataURL('image/png'));};img.onerror=e=>{URL.revokeObjectURL(url);reject(e);};img.src=url;});}
+function addPdfLogo(doc,logoPng){if(logoPng)try{doc.addImage(logoPng,'PNG',15,8,14,14);}catch(e){}}
+function addPdfWatermark(doc){try{doc.setGState(new doc.GState({opacity:0.07}));doc.setFont('helvetica','bold');doc.setFontSize(70);doc.setTextColor(CUBICA_RED_RGB[0],CUBICA_RED_RGB[1],CUBICA_RED_RGB[2]);doc.text('CUBICA.BY',105,148,{align:'center',angle:45});doc.setGState(new doc.GState({opacity:1}));}catch(e){}}
+
+// ===== РЕНДЕР СПЕЦИФИКАЦИИ =====
+function renderSpecToCanvas(specRows, widthPx){
+  widthPx = widthPx || 1400;
+  const FONT_NORMAL = '22px "Segoe UI", Roboto, Arial, sans-serif';
+  const FONT_BOLD   = 'bold 22px "Segoe UI", Roboto, Arial, sans-serif';
+  const FONT_ITALIC = 'italic 22px "Segoe UI", Roboto, Arial, sans-serif';
+  const rowH = 34;
+  const padX = 30, padTop = 40, padBottom = 30;
+  const valueGap = 20;
+
+  const tmp = document.createElement('canvas');
+  const ctx0 = tmp.getContext('2d');
+  const lines = [];
+  for (const row of specRows) {
+    if (row.kind === 'area') {
+      lines.push({ type: 'text', text: row.label + ': ' + row.value, font: FONT_ITALIC, color: '#555', h: rowH });
+      continue;
+    }
+    ctx0.font = FONT_NORMAL;
+    const maxLabelW = widthPx - padX * 2 - valueGap - 200;
+    const wrapped = wrapText(ctx0, '• ' + armShownLabel(row.label), maxLabelW);
+    for (let i = 0; i < wrapped.length; i++) {
+      lines.push({
+        type: 'bullet',
+        text: wrapped[i],
+        font: FONT_NORMAL,
+        color: '#222',
+        h: rowH,
+        value: i === wrapped.length - 1 ? row.value : '',
+      });
+    }
+  }
+  const totalH = padTop + padBottom + lines.reduce((s, l) => s + l.h, 0);
+  const canvas = document.createElement('canvas');
+  canvas.width = widthPx;
+  canvas.height = totalH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, widthPx, totalH);
+  ctx.textBaseline = 'middle';
+
+  let y = padTop;
+  for (const ln of lines) {
+    ctx.font = ln.font;
+    ctx.fillStyle = ln.color;
+    ctx.textAlign = 'left';
+    ctx.fillText(ln.text, padX, y + ln.h / 2);
+    if (ln.value) {
+      ctx.font = FONT_BOLD;
+      ctx.fillStyle = '#1a1a2e';
+      ctx.textAlign = 'right';
+      ctx.fillText(ln.value, widthPx - padX, y + ln.h / 2);
+    }
+    y += ln.h;
+  }
+  return canvas.toDataURL('image/png');
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(test).width > maxWidth && cur) {
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = test;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+function renderSpecWithHeader(specRows, widthPx) {
+  widthPx = widthPx || 1400;
+  const headerH = 60;
+  const base = renderSpecToCanvas(specRows, widthPx);
+  return new Promise((resolve) => {
+    const im = new Image();
+    im.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = widthPx;
+      canvas.height = im.height + headerH;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, widthPx, canvas.height);
+      ctx.fillStyle = '#1a1a2e';
+      ctx.font = 'bold 26px "Segoe UI", Roboto, Arial, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      ctx.fillText('Спецификация', 30, headerH / 2 + 4);
+      ctx.strokeStyle = '#d2d2d2';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(30, headerH - 4);
+      ctx.lineTo(widthPx - 30, headerH - 4);
+      ctx.stroke();
+      ctx.drawImage(im, 0, headerH);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    im.src = base;
+  });
+}
+
+async function drawSpecImageWithHeader(doc, specRows, M, PW, startY) {
+  const imgData = await renderSpecWithHeader(specRows, 1400);
+  const img = new Image();
+  img.src = imgData;
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+  const imgWmm = PW - 2 * M;
+  const imgHmm = imgWmm * (img.height / img.width);
+  let y = startY;
+  if (y + imgHmm > 285) { doc.addPage(); y = 20; }
+  doc.addImage(imgData, 'PNG', M, y, imgWmm, imgHmm);
+  return y + imgHmm + 4;
+}
+
+// ===== РАСКЛАДКА (ARMSTRONG) =====
+function buildLayout(L,W,offsetX,offsetY,totalRotDeg,L_in,W_in,phase){
+phase=phase||0;
+const t=totalRotDeg*Math.PI/180,ct=Math.cos(t),st=Math.sin(t);
+const act=Math.abs(ct),ast=Math.abs(st);
+const hx=(L_in/2)*act+(W_in/2)*ast;
+const hy=(L_in/2)*ast+(W_in/2)*act;
+
+// Возвращаем фиксированный шаг 600
+const stepY = TILE_CELL; 
+const bcL = Math.ceil(L / TILE_CELL);
+const bcW = Math.ceil(W / stepY);
+
+// Центровка сетки. Для 600х600 — по шагу 600.
+// Для 1200х600 — по шагу 1200 в направлении, где плита имеет длину 1200,
+// чтобы подрезка у противоположных стен была одинаковой.
+const _t1200=!!tile1200Chk.checked, _rigid=!!frameRigidChk.checked;
+let xS=-(bcL*TILE_CELL-L)/2+offsetX;
+let yS=-(bcW*stepY-W)/2+offsetY;
+if(_t1200 && !_rigid){ yS=-(Math.ceil(W/1200)*1200-W)/2+offsetY; }
+if(_t1200 && _rigid){ xS=-(Math.ceil(L/1200)*1200-L)/2+offsetX; }
+const yWallTop=W/2-hy,yWallBot=W/2+hy;
+const xWallMin=L/2-hx,xWallMax=L/2+hx;
+const jMin=Math.floor((xWallMin-xS)/TILE_CELL)-1;
+const jMax=Math.ceil((xWallMax-xS)/TILE_CELL)+1;
+const kMin=Math.floor((yWallTop-yS)/TILE_CELL)-1;
+const kMax=Math.ceil((yWallBot-yS)/TILE_CELL)+1;
+const vX=[];for(let j=jMin;j<=jMax;j++) vX.push(xS+j*TILE_CELL);
+let beams=[],tea600Y=[];
+const isTile1200 = !!tile1200Chk.checked;
+const isRigid = !!frameRigidChk.checked;
+// Режим плиты 1200х600:
+//  'across' — обычный: несущие 3600 через 1200, поперечные 1200 через 600,
+//             плита ложится длинной стороной 1200 ПОПЕРЁК несущих (между ними). 600-х профилей нет.
+//  'along'  — жесткий каркас: несущие 3600 через 600, поперечные 600 через 1200,
+//             плита ложится длинной стороной 1200 ВДОЛЬ несущих.
+const tileMode = isTile1200 ? (isRigid ? 'along' : 'across') : '600';
+
+for(let k=kMin;k<=kMax;k++){
+  const y = yS + k * stepY;
+  const m=((k%2)+2)%2;
+  let isBeam;
+  if(isRigid){
+    isBeam = true;
+  } else if(isTile1200 && standardMode){
+    isBeam = m===1; // техкарта: несущие на нечётных линиях, без перестановки
+  } else {
+    isBeam = phase===1 ? m===0 : m===1;
+  }
+  if(isBeam) beams.push(y); else if(!isTile1200) tea600Y.push(y);
+}
+
+// Техкарта (доборные несущие у стен) — только для 600х600
+if (standardMode && !isTile1200) {
+  let allLines = [...beams, ...tea600Y]
+    .filter(y => y > yWallTop + 1 && y < yWallBot - 1)
+    .sort((a,b)=>a-b);
+  
+  if (allLines.length > 0) {
+    const bottomLine = allLines[0];
+    let isRed = beams.some(b => Math.abs(b - bottomLine) < 0.5);
+    if (!isRed) {
+      tea600Y = tea600Y.filter(y => Math.abs(y - bottomLine) > 0.5);
+      beams.push(bottomLine);
+    }
+    const topLine = allLines[allLines.length - 1];
+    let isRedTop = beams.some(b => Math.abs(b - topLine) < 0.5);
+    if (!isRedTop) {
+      tea600Y = tea600Y.filter(y => Math.abs(y - topLine) > 0.5);
+      beams.push(topLine);
+    }
+  }
+  beams.sort((a, b) => a - b);
+  tea600Y.sort((a, b) => a - b);
+}
+
+if (isTile1200) {
+  tea600Y = []; 
+}
+
+const xLineMin=vX[0],xLineMax=vX[vX.length-1];
+const beamsIn=beams.filter(y=>y>yWallTop-0.5&&y<yWallBot+0.5);
+const edges=[yWallTop,...beamsIn,yWallBot];
+const bands=[];
+for(let i=0;i<edges.length-1;i++){
+const y0=edges[i],y1=edges[i+1];
+if(y1-y0<=0.5) continue;
+bands.push({y0,y1,isEdge:(i===0)||(i===edges.length-2)});
+}
+const toDisplay=(xw,yw)=>{
+const dxw=xw-L/2,dyw=yw-W/2;
+const u=dxw*ct-dyw*st,v=dxw*st+dyw*ct;
+return [u+L_in/2,v+W_in/2];
+};
+const poly=roomPolygon;
+function onWallByPoints(dx1,dy1,dx2,dy2){
+if(poly) return segOnPolyWall(poly,dx1,dy1,dx2,dy2);
+const onTop=Math.abs(dy1)<WALL_TOL&&Math.abs(dy2)<WALL_TOL;
+const onBot=Math.abs(dy1-W_in)<WALL_TOL&&Math.abs(dy2-W_in)<WALL_TOL;
+const onLeft=Math.abs(dx1)<WALL_TOL&&Math.abs(dx2)<WALL_TOL;
+const onRight=Math.abs(dx1-L_in)<WALL_TOL&&Math.abs(dx2-L_in)<WALL_TOL;
+return onTop||onBot||onLeft||onRight;
+}
+function itemOnWall(it){
+let ex1,ey1,ex2,ey2;
+if(it.ori==='h'){ex1=it.x-it.len/2;ey1=it.y;ex2=it.x+it.len/2;ey2=it.y;}
+else{ex1=it.x;ey1=it.y-it.len/2;ex2=it.x;ey2=it.y+it.len/2;}
+const [dx1,dy1]=toDisplay(ex1,ey1);const [dx2,dy2]=toDisplay(ex2,ey2);
+return onWallByPoints(dx1,dy1,dx2,dy2);
+}
+const items=[];
+for(const yb of beams) items.push({type:3600,x:(xLineMin+xLineMax)/2,y:yb,len:xLineMax-xLineMin,ori:'h'});
+if(!isTile1200){
+  for(const yt of tea600Y){
+    for(let j=0;j<vX.length-1;j++){
+      const len=vX[j+1]-vX[j];if(len<=0.5) continue;
+      items.push({type:600,x:(vX[j]+vX[j+1])/2,y:yt,len,ori:'h'});
+    }
+  }
+}
+let warnWide=false;
+for(const band of bands){
+const h=band.y1-band.y0,yMid=(band.y0+band.y1)/2;
+let type;
+if(tileMode==='across'){
+  type=1200;
+  if(h>1200+0.5 && band.isEdge) warnWide=true;
+} else if(tileMode==='along'){
+  type=600;
+  if(h>600+0.5 && band.isEdge) warnWide=true;
+} else {
+  if(h<=600) type=600; else if(h<=1200) type=1200;
+  else{type=1200;if(band.isEdge)warnWide=true;}
+}
+for(let jj=0;jj<vX.length;jj++){
+  const j=jMin+jj;
+  // В режиме 'along' поперечные 600 стоят только на стыках плит (через 1200)
+  if(tileMode==='along' && (((j%2)+2)%2)!==0) continue;
+  items.push({type,x:vX[jj],y:yMid,len:h,ori:'v'});
+}
+}
+
+// ===== ПЛИТЫ (ячейки) в координатах сетки =====
+const tiles=[];
+if(tileMode==='600'){
+  for(let k=kMin;k<=kMax;k++) for(let j=jMin;j<=jMax;j++)
+    tiles.push({x0:xS+j*TILE_CELL,y0:yS+k*TILE_CELL,w:TILE_CELL,h:TILE_CELL});
+} else {
+  // ряды плит — между соседними несущими (+ по одному ряду за крайними несущими)
+  const bl=beams.slice().sort((a,b)=>a-b);
+  const pitch = tileMode==='across' ? 1200 : 600;
+  if(bl.length){ bl.unshift(bl[0]-pitch); bl.push(bl[bl.length-1]+pitch); }
+  for(let r=0;r<bl.length-1;r++){
+    const y0=bl[r],hh=bl[r+1]-bl[r];
+    if(hh<=0.5) continue;
+    if(tileMode==='across'){
+      for(let j=jMin;j<=jMax;j++) tiles.push({x0:xS+j*TILE_CELL,y0,w:TILE_CELL,h:hh});
+    } else {
+      const j0 = (((jMin%2)+2)%2)===0 ? jMin : jMin-1;
+      for(let j=j0;j<=jMax;j+=2) tiles.push({x0:xS+j*TILE_CELL,y0,w:2*TILE_CELL,h:hh});
+    }
+  }
+}
+// Проверка «точка внутри помещения» (в координатах сетки)
+function insideRoom(xw,yw){
+  const [dx,dy]=toDisplay(xw,yw);
+  if(poly) return pointInPoly(poly,dx,dy);
+  return dx>=0&&dx<=L_in&&dy>=0&&dy<=W_in;
+}
+// Подсчёт плит 1200х600 с учётом подрезки: кусок ≤ половины плиты — из одной плиты выходит 2 куска
+let tiles1200Count=0, minEdgeStrip=Infinity;
+if(isTile1200){
+  let sum=0;
+  const NX=tileMode==='across'?6:12, NY=tileMode==='across'?12:6;
+  for(const tl of tiles){
+    let inside=0;
+    for(let a=0;a<NX;a++) for(let b=0;b<NY;b++){
+      if(insideRoom(tl.x0+(a+0.5)*tl.w/NX, tl.y0+(b+0.5)*tl.h/NY)) inside++;
+    }
+    if(!inside) continue;
+    const f=inside/(NX*NY);
+    tl.frac=f;
+    sum += f<=0.5+1e-9 ? 0.5 : 1;
+  }
+  tiles1200Count=Math.ceil(sum-1e-9);
+  // самая узкая полоса подрезки у стены (между стеной и крайней несущей)
+  for(const band of bands){ if(band.isEdge){ const h=band.y1-band.y0; if(h<minEdgeStrip) minEdgeStrip=h; } }
+}
+let excludedOnWall=0;
+for(let i=items.length-1;i>=0;i--) if(itemOnWall(items[i])){items.splice(i,1);excludedOnWall++;}
+function rectSegClip(x1,y1,x2,y2){
+let t0=0,t1=1;const dx=x2-x1,dy=y2-y1;
+const p=[-dx,dx,-dy,dy],q=[x1,L_in-x1,y1,W_in-y1];
+for(let i=0;i<4;i++){
+if(Math.abs(p[i])<1e-9){if(q[i]<0)return null;}
+else{const tt=q[i]/p[i];if(p[i]<0)t0=Math.max(t0,tt);else t1=Math.min(t1,tt);}
+}
+if(t0>t1+1e-6) return null;
+return [t0,t1];
+}
+function clipItem(it){
+let ex1,ey1,ex2,ey2;
+if(it.ori==='h'){ex1=it.x-it.len/2;ey1=it.y;ex2=it.x+it.len/2;ey2=it.y;}
+else{ex1=it.x;ey1=it.y-it.len/2;ex2=it.x;ey2=it.y+it.len/2;}
+const [dx1,dy1]=toDisplay(ex1,ey1);const [dx2,dy2]=toDisplay(ex2,ey2);
+if(poly) return clipSegToPoly(poly,dx1,dy1,dx2,dy2);
+const c=rectSegClip(dx1,dy1,dx2,dy2);
+if(!c) return [];
+const x1=dx1+(dx2-dx1)*c[0], y1=dy1+(dy2-dy1)*c[0];
+const x2=dx1+(dx2-dx1)*c[1], y2=dy1+(dy2-dy1)*c[1];
+return [[x1,y1,x2,y2]];
+}
+let n3600=0,n1200=0,n600=0,n600Side=0;
+let sum3600Length=0;
+for(const it of items){
+const segs=clipItem(it);
+if(!segs.length) continue;
+let visLen=0;
+for(const s of segs) visLen+=Math.hypot(s[2]-s[0],s[3]-s[1]);
+if(visLen<MIN_VISIBLE) continue;
+if(it.type===3600){n3600++;sum3600Length+=visLen;}
+else if(it.type===1200) n1200++;
+else{
+n600++;
+if(it.ori==='h'){for(const s of segs){if(Math.min(s[0],s[2])<1||Math.max(s[0],s[2])>L_in-1){n600Side++;break;}}}
+}
+}
+const beamsInRoom=[];
+for(const yb of beams){
+const segs=clipItem({type:3600,x:(xLineMin+xLineMax)/2,y:yb,len:xLineMax-xLineMin,ori:'h'});
+let visLen=0;
+for(const s of segs) visLen+=Math.hypot(s[2]-s[0],s[3]-s[1]);
+if(visLen<MIN_VISIBLE) continue;
+let onWall=false;
+if(poly){
+if(segs.length===1){
+const s=segs[0];
+if(Math.abs(s[2]-s[0])>0.01) onWall=segOnPolyWall(poly,s[0],s[1],s[2],s[3]);
+}
+} else {
+const [dx1,dy1]=toDisplay(xLineMin,yb);
+const [dx2,dy2]=toDisplay(xLineMax,yb);
+onWall=onWallByPoints(dx1,dy1,dx2,dy2);
+}
+if(onWall) continue;
+beamsInRoom.push(yb);
+}
+return {phase,bcL,bcW,xS,yS,jMin,jMax,kMin,kMax,vX,beams,tea600Y,bands,items,tiles,tileMode,
+tiles1200Count,minEdgeStrip,
+n3600,n1200,n600,n600Side,beamsInRoom,warnWide,sum3600Length,excludedOnWall,clipItem};
+}
+
+let currentLayout=null,currentView='2d',threeInitialized=false,rotated90=false,standardMode=false;
+let roomPolygon=null;
+let threeRenderer,threeScene,threeCamera,threeControls;
+let threeRoomGroup,threeGridPivot,threeTilesGroup,threeHangersGroup,threeCeilingMesh;
+let project=[],activeRoomIndex=null,specMode='current';
+
+function calculate(){
+let L_in=parseFloat(lengthInput.value),W_in=parseFloat(widthInput.value);
+if(isNaN(L_in)||isNaN(W_in)||L_in<=0||W_in<=0){
+resultsDiv.innerHTML='<p style="color:#d32f2f">Введите корректные размеры.</p>';
+layout2dDiv.innerHTML='';return;
+}
+if(!roomPolygon && L_in < W_in){const _t=L_in;L_in=W_in;W_in=_t;}
+
+const offX_in=parseFloat(offsetXSlider.value),offY_in=parseFloat(offsetYSlider.value),rotationDeg=parseFloat(rotationSlider.value);
+tile1200Chk.checked=false;
+const isTile1200 = false;
+const isFrameRigid = !!frameRigidChk.checked;
+const GR = grState();
+const isClassic = GR.grSys !== 'gl15';
+MAIN_LENGTH = isClassic ? 2400 : 3600;
+
+let L=L_in, W=W_in;
+if(roomPolygon){
+  const bb=polyBBox(roomPolygon);
+  L=bb.W; W=bb.H;
+} else if(rotated90){
+  L=W_in; W=L_in;
+}
+const totalRot=rotationDeg+(rotated90?90:0);
+const t=totalRot*Math.PI/180,cosT=Math.cos(t),sinT=Math.sin(t);
+const offsetX=offX_in*cosT+offY_in*sinT;
+const offsetY=-offX_in*sinT+offY_in*cosT;
+
+const layNormal=buildLayout(L,W,offsetX,offsetY,totalRot,L_in,W_in,0);
+let lay=layNormal;
+let ilyutikApplied=false;
+let n3600Normal=layNormal.n3600;
+let n3600Alternative=null;
+
+if(!standardMode && !isFrameRigid){
+  const layFlip=buildLayout(L,W,offsetX,offsetY,totalRot,L_in,W_in,1);
+  n3600Alternative=layFlip.n3600;
+  if(layFlip.n3600<layNormal.n3600){lay=layFlip;ilyutikApplied=true;}
+}
+
+const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
+let tilesCount;
+if (isTile1200) {
+  // Реальный подсчёт по раскладке: каждая плита 1200х600, попавшая в помещение;
+  // подрезанные куски ≤ половины плиты считаются по 0,5 (из одной плиты 2 куска)
+  tilesCount = lay.tiles1200Count;
+} else {
+  tilesCount = lay.bcL * lay.bcW;
+}
+
+const positionsX=[];
+if(L<=2*HANGER_WALL_MAX) positionsX.push(L/2);
+else{
+positionsX.push(HANGER_WALL_MAX);
+let x=HANGER_WALL_MAX+HANGER_SPACING;
+while(x<=L-HANGER_WALL_MAX){positionsX.push(x);x+=HANGER_SPACING;}
+const lx=L-HANGER_WALL_MAX;
+if(lx-positionsX[positionsX.length-1]>50) positionsX.push(lx);
+}
+const totalHangers=lay.beamsInRoom.length*positionsX.length;
+const areaM2 = roomPolygon ? polyArea(roomPolygon)/1e6 : L_in*W_in/1e6;
+const perimeter = roomPolygon ? polyPerimeter(roomPolygon) : 2*(L_in+W_in);
+const wallAnglePieces=Math.ceil(perimeter/3000);
+const angleFasteners=Math.ceil(perimeter/ANGLE_WALL_SPACING);
+
+// ===== ПОДВЕСЫ И КРЕПЕЖ =====
+const isHangers = !!hangersChk.checked;
+const hangerHeight = parseFloat(hangerHInput.value) || 0;
+
+// ===== ГРИЛЬЯТО: решётка 600×600 вместо плиты, каркас — сетка Армстронга =====
+const gridsCount = tilesCount;                 // решёток 600×600 = плит Армстронга
+const perGrid = grPerGrid(GR.grCell);          // мам (и пап) на одну решётку
+const nMama = gridsCount * perGrid, nPapa = gridsCount * perGrid;
+const nLplank = isClassic ? 0 : gridsCount * 4; // L-планка — только GL15, 4 шт на решётку
+// соединители направляющих 2400 (классика): стыки на каждой линии несущих
+let nConn = 0;
+if (isClassic) {
+  for (const it of lay.items) {
+    if (it.type !== 3600) continue;
+    for (const sg of lay.clipItem(it)) {
+      const len = Math.hypot(sg[2]-sg[0], sg[3]-sg[1]);
+      if (len >= MIN_VISIBLE) nConn += Math.max(0, Math.ceil(len / MAIN_LENGTH) - 1);
+    }
+  }
+  nConn = Math.max(nConn, nMainPieces - lay.n3600);
+}
+const g = GR.grSys, c = GR.grCell, col = GR.grColor;
+const pre = isClassic ? 'gr.'+g : 'gr.gl';
+const cnt = (key, n, extra) => Object.assign({label:grLabel(key), value:n+' шт.', num:n, kind:'count', unit:'шт.'}, GR.grColor==='ral'?{_gr:{grColor:'ral',grRal:GR.grRal}}:{}, extra||{});
+const specRows=[
+{label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
+cnt(pre+'.mama.'+c+'.'+col, nMama),
+cnt(pre+'.papa.'+c+'.'+col, nPapa),
+];
+if (!isClassic) specRows.push(cnt('gr.gl.l.'+c+'.'+col, nLplank));
+if (isClassic) {
+  specRows.push(cnt(pre+'.g2400.'+col, nMainPieces, {color:'#d32f2f'}));
+  if (nConn>0) specRows.push(cnt('gr.conn', nConn, {color:'#ffb300'}));
+  if (lay.n1200>0) specRows.push(cnt(pre+'.g1200.'+col, lay.n1200, {color:'#1976d2'}));
+  specRows.push(cnt(pre+'.g600.'+col, lay.n600, {color:'#43a047'}));
+} else {
+  specRows.push(cnt('gr.gl.main.'+col, nMainPieces, {color:'#d32f2f'}));
+  if (lay.n1200>0) specRows.push(cnt('gr.gl.c1200.'+col, lay.n1200, {color:'#1976d2'}));
+  specRows.push(cnt('gr.gl.c600.'+col, lay.n600, {color:'#43a047'}));
+}
+specRows.push(cnt('gr.angle.'+col, wallAnglePieces));
+
+if (isHangers) {
+  if (hangerHeight < 0.50) {
+    specRows.push({label:'Европодвес 500 мм', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+  } else if (hangerHeight < 0.70) {
+    specRows.push({label:'Тяга-крюк 250 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+  } else if (hangerHeight < 1.00) {
+    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+  } else if (hangerHeight < 1.30) {
+    specRows.push({label:'Тяга-крюк 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+  } else if (hangerHeight < 1.50) {
+    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+  } else if (hangerHeight < 2.00) {
+    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+  } else if (hangerHeight < 2.50) {
+    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
+  } else {
+    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
+  }
+}
+
+// Анкеры и дюбели есть ВСЕГДА (не зависят от галочки подвесов)
+specRows.push({label:'Анкерный болт с полукольцом М8х40 (100 шт.)',value:totalHangers+' шт.',num:totalHangers,kind:'count',unit:'шт.'});
+specRows.push({label:'Дюбель-гвоздь SM-G 6x40 (3600/200шт.)',value:'≈ '+angleFasteners+' шт.',num:angleFasteners,kind:'approx',unit:'шт.'});
+
+const warnings=[];
+if(lay.n3600<1) warnings.push('⚠ Ни одной несущей — увеличьте ширину помещения или сдвиньте раскладку.');
+if(lay.warnWide) warnings.push(lay.tileMode==='along' ? '⚠ Полоса у стены > 600 мм — рекомендуется промежуточная несущая.' : '⚠ Полоса у стены > 1200 мм — рекомендуется промежуточная несущая.');
+if(rotationDeg!==0) warnings.push('⚠ При повороте раскладки количество элементов ориентировочное.');
+if(roomPolygon) warnings.push('✏️ Помещение начерчено: '+roomPolygon.length+' сторон. Площадь '+areaM2.toFixed(2)+' м².');
+if(isTile1200){
+  if(isFrameRigid){
+    warnings.push('🔧 Плита 1200×600 + жесткий каркас: несущие 3600 через 600 мм, поперечные 600 через 1200 мм, плита ложится вдоль несущих.');
+  } else {
+    warnings.push('🟦 Плита 1200×600: несущие 3600 через 1200 мм, поперечные 1200 через 600 мм, профиль 600 не нужен.');
+    if(standardMode) warnings.push('📐 Расчёт по техкарте: несущие на нечётных линиях сетки. Несущих линий — '+n3600Normal+' шт.');
+    else if(ilyutikApplied) warnings.push('📐 Оптимизация: несущие сдвинуты на 600 мм. Направляющих 3600 — '+lay.n3600+' шт. (вместо '+n3600Normal+').');
+    else warnings.push('📐 Оптимизация: перестановка не даёт выигрыша — обычное положение ('+n3600Normal+' шт.).');
+  }
+  if(isFinite(lay.minEdgeStrip) && lay.minEdgeStrip<150)
+    warnings.push('⚠ Узкая подрезка плиты у стены — '+Math.round(lay.minEdgeStrip)+' мм. Рекомендуется сдвинуть раскладку (↑ ↓).');
+}
+warnings.push('ℹ '+GR_SYS_NAME[GR.grSys]+' · ячейка '+GR.grCell+'×'+GR.grCell+' · '+grColorText(GR)+'. Решёток 600×600: '+gridsCount+' шт. «Мама» и «папа» — по '+perGrid+' шт на решётку'+(isClassic?'':', L-планка — 4 шт на решётку')+'.');
+if(isClassic) warnings.push('ℹ Несущая — направляющая 2400 (вместо 3600), стыки — соединителем'+(nConn?': '+nConn+' шт.':'.'));
+if(!window.CubicaJournal || !window.CubicaJournal.roleDef || !window.CubicaJournal.roleDef('gr.conn')) warnings.push('⚠ Загружена старая версия journal-core.js — обновите ядро (Cubica-journal), иначе роли грильято не работают.');
+if(false) warnings.push('🔧 Жесткий каркас: несущие 3600 через 600 мм на каждой линии, между ними поперечные 600 через 600 мм (профиль 1200 не нужен).');
+else if(standardMode) warnings.push('📐 Расчёт по техкарте: несущие на нечётных линиях сетки. Несущих линий — '+n3600Normal+' шт.');
+else if(ilyutikApplied) warnings.push('📐 Оптимизация: несущие на чётных линиях сетки. Несущих линий — '+lay.n3600+' шт. (вместо '+n3600Normal+').');
+else warnings.push('📐 Оптимизация: перестановка не даёт выигрыша — обычное положение ('+n3600Normal+' шт.).');
+
+currentLayout={L,W,L_in,W_in,rotationDeg,rotated90,totalRot,lay,positionsX,
+nMainPieces,tilesCount,totalHangers,wallAnglePieces,angleFasteners,perimeter,areaM2,
+specRows,warnings,standardMode,ilyutikApplied,n3600Normal,n3600Alternative,
+tile1200: isTile1200, frameRigid: isFrameRigid, tileMode: lay.tileMode,
+hangers: isHangers, hangerHeight: hangerHeight,
+gr: GR, gridsCount, perGrid, nConn, mainLength: MAIN_LENGTH,
+polygon:roomPolygon?roomPolygon.map(p=>[p[0],p[1]]):null};
+
+renderSpec();
+drawLayout2D();
+if(threeInitialized) update3D();
+}
+
+function drawLayout2D(){
+if(!currentLayout) return;
+const {L,W,L_in,W_in,lay,totalRot,polygon,frameRigid,tile1200}=currentLayout;
+const {items,jMin,jMax,kMin,kMax,xS,yS}=lay;
+const Lreal=L_in,Wreal=W_in;
+const width=640,height=440,padding=60;
+const s=Math.min((width-2*padding)/Lreal,(height-2*padding)/Wreal);
+const drawWidth=Lreal*s,drawHeight=Wreal*s;
+const ox=(width-drawWidth)/2,oy=(height-drawHeight)/2;
+const roomCx=ox+drawWidth/2,roomCy=oy+drawHeight/2;
+const gridCx=L*s/2,gridCy=W*s/2;
+
+let polySvgPts=null;
+if(polygon){
+  polySvgPts=polygon.map(p=>[ox+p[0]*s, oy+p[1]*s]);
+}
+
+let svg='<svg width="'+width+'" height="'+height+'" viewBox="0 0 '+width+' '+height+'" style="background:#f9f9f9;border:1px solid #e0e0e0;">';
+svg+='<defs><clipPath id="ac-room-clip" clipPathUnits="userSpaceOnUse">';
+if(polygon){
+svg+='<polygon points="'+polySvgPts.map(p=>p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ')+'"/>';
+} else {
+svg+='<rect x="'+ox+'" y="'+oy+'" width="'+drawWidth+'" height="'+drawHeight+'"/>';
+}
+svg+='</clipPath></defs>';
+
+if(polygon){
+svg+='<polygon points="'+polySvgPts.map(p=>p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ')+'" fill="white"/>';
+} else {
+svg+='<rect x="'+ox+'" y="'+oy+'" width="'+drawWidth+'" height="'+drawHeight+'" fill="white"/>';
+}
+
+svg+='<g clip-path="url(#ac-room-clip)"><g transform="translate('+roomCx+' '+roomCy+') rotate('+totalRot+') translate('+(-gridCx)+' '+(-gridCy)+')">';
+const gap=(TILE_CELL-TILE_PANEL)/2;
+for(const tl of lay.tiles){
+  const tw=tl.w-2*gap, th=tl.h-2*gap;
+  if(tw<=0||th<=0) continue;
+  svg+='<rect x="'+((tl.x0+gap)*s)+'" y="'+((tl.y0+gap)*s)+'" width="'+(tw*s)+'" height="'+(th*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
+  // ячейки решётки грильято
+  const cellMm = (currentLayout.gr && currentLayout.gr.grCell) || 100;
+  let pth='';
+  for(let q=cellMm; q<tl.w-1; q+=cellMm){ const x=(tl.x0+q)*s; pth+='M'+x.toFixed(1)+' '+(tl.y0*s).toFixed(1)+'V'+((tl.y0+tl.h)*s).toFixed(1); }
+  for(let q=cellMm; q<tl.h-1; q+=cellMm){ const y=(tl.y0+q)*s; pth+='M'+(tl.x0*s).toFixed(1)+' '+y.toFixed(1)+'H'+((tl.x0+tl.w)*s).toFixed(1); }
+  if(pth) svg+='<path d="'+pth+'" stroke="#b9bec6" stroke-width="0.5" fill="none"/>';
+}
+for(const it of items){
+let col,sw;
+if(it.type===3600){col='#d32f2f';sw=3.2;}
+else if(it.type===1200){col='#1976d2';sw=2;}
+else{col='#43a047';sw=1.6;}
+if(it.type===3600){
+const xa0=it.x-it.len/2,xa1=it.x+it.len/2;
+const pieces=Math.max(1,Math.ceil(it.len/MAIN_LENGTH));
+for(let q=0;q<pieces;q++){
+const xa=xa0+q*MAIN_LENGTH;
+const xb=Math.min(xa0+(q+1)*MAIN_LENGTH,xa1);
+if(xa>=xa1) break;
+svg+='<line x1="'+(xa*s)+'" y1="'+(it.y*s)+'" x2="'+(xb*s)+'" y2="'+(it.y*s)+'" stroke="'+col+'" stroke-width="'+sw+'"/>';
+}
+for(let q=1;q<pieces;q++){
+const xA=xa0+q*MAIN_LENGTH;
+if(xA>=xa1) break;
+svg+='<circle cx="'+(xA*s)+'" cy="'+(it.y*s)+'" r="4" fill="#ffd54f" stroke="#333" stroke-width="1"/>';
+}
+}else{
+let x1,y1,x2,y2;
+if(it.ori==='h'){x1=it.x-it.len/2;x2=it.x+it.len/2;y1=y2=it.y;}
+else{x1=x2=it.x;y1=it.y-it.len/2;y2=it.y+it.len/2;}
+svg+='<line x1="'+(x1*s)+'" y1="'+(y1*s)+'" x2="'+(x2*s)+'" y2="'+(y2*s)+'" stroke="'+col+'" stroke-width="'+sw+'"/>';
+}
+}
+svg+='</g></g>';
+
+if(polygon){
+svg+='<polygon points="'+polySvgPts.map(p=>p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ')+'" fill="none" stroke="#333" stroke-width="2"/>';
+} else {
+svg+='<rect x="'+ox+'" y="'+oy+'" width="'+drawWidth+'" height="'+drawHeight+'" fill="none" stroke="#333" stroke-width="2"/>';
+svg+='<text x="'+roomCx+'" y="'+(oy-12)+'" text-anchor="middle" font-size="12" fill="#333" font-weight="600">'+Lreal+' мм</text>';
+svg+='<text x="'+(ox-12)+'" y="'+roomCy+'" text-anchor="middle" font-size="12" fill="#333" font-weight="600" transform="rotate(-90 '+(ox-12)+' '+roomCy+')">'+Wreal+' мм</text>';
+}
+if(totalRot!==0) svg+='<text x="'+(width-15)+'" y="25" text-anchor="end" font-size="14" font-weight="bold" fill="#333">'+(totalRot>0?'↻':'↺')+' '+Math.abs(totalRot)+'°</text>';
+svg+='</svg>';
+layout2dDiv.innerHTML=svg;
+}
+
+// ===== 3D =====
+function init3D(){
+const canvas=$('ac-canvas3d');const CW=640,CH=440;
+threeRenderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
+threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+threeRenderer.setSize(CW,CH,false);
+threeRenderer.localClippingEnabled=true;
+threeScene=new THREE.Scene();
+threeScene.background=new THREE.Color(0xeef1f5);
+threeScene.fog=new THREE.Fog(0xeef1f5,20,60);
+threeCamera=new THREE.PerspectiveCamera(45,CW/CH,0.05,300);
+threeControls=new OrbitControls(threeCamera,canvas);
+threeControls.enableDamping=true;threeControls.dampingFactor=0.08;
+threeControls.maxPolarAngle=Math.PI*0.98;threeControls.minDistance=1.5;threeControls.maxDistance=100;
+threeScene.add(new THREE.AmbientLight(0xffffff,0.85));
+const d1=new THREE.DirectionalLight(0xffffff,0.75);d1.position.set(6,12,8);threeScene.add(d1);
+const d2=new THREE.DirectionalLight(0xffffff,0.35);d2.position.set(-8,8,-6);threeScene.add(d2);
+threeRoomGroup=new THREE.Group();threeScene.add(threeRoomGroup);
+threeGridPivot=new THREE.Group();threeScene.add(threeGridPivot);
+threeTilesGroup=new THREE.Group();threeGridPivot.add(threeTilesGroup);
+threeHangersGroup=new THREE.Group();threeGridPivot.add(threeHangersGroup);
+(function loop(){requestAnimationFrame(loop);threeControls.update();threeRenderer.render(threeScene,threeCamera);})();
+}
+function ensure3D(){if(threeInitialized)return true;const wasHidden=layout3dDiv.style.display==='none';const prev2d=layout2dDiv.style.display;if(wasHidden){layout2dDiv.style.display='none';layout3dDiv.style.display='';}try{init3D();threeInitialized=true;if(wasHidden&&currentView!=='3d'){layout2dDiv.style.display=prev2d||'';layout3dDiv.style.display='none';}return true;}catch(e){console.error(e);if(wasHidden){layout2dDiv.style.display=prev2d||'';layout3dDiv.style.display='none';}alert('3D ошибка: '+e.message);return false;}}
+let _grTex=null,_grTexKey='';
+function grLatticeMaterial(){
+  const st=(currentLayout&&currentLayout.gr)||grState();
+  const key=st.grCell+'|'+st.grColor;
+  if(!_grTex||_grTexKey!==key){
+    const N=512, cv=document.createElement('canvas'); cv.width=cv.height=N;
+    const cx=cv.getContext('2d'); cx.clearRect(0,0,N,N);
+    cx.fillStyle='rgba(40,44,52,0.28)'; cx.fillRect(0,0,N,N); // просвет ячеек
+    cx.fillStyle=GR_COLOR_HEX[st.grColor]||'#f4f4ee';
+    const n=Math.round(600/st.grCell), step=N/n, w=Math.max(4,N*12/600);
+    for(let i=0;i<=n;i++){ const p=Math.min(N-w,Math.max(0,i*step-w/2)); cx.fillRect(p,0,w,N); cx.fillRect(0,p,N,w); }
+    if(_grTex) _grTex.dispose();
+    _grTex=new THREE.CanvasTexture(cv); _grTex.wrapS=_grTex.wrapT=THREE.RepeatWrapping; _grTexKey=key;
+  }
+  return new THREE.MeshLambertMaterial({map:_grTex,transparent:true,depthWrite:false,side:THREE.DoubleSide});
+}
+function grScaleUV(geo,tw,th){
+  if(geo.__grUV) return; const uv=geo.attributes.uv; if(!uv) return;
+  const fu=tw/TILE_PANEL, fv=th/TILE_PANEL;
+  for(let i=0;i<uv.count;i++) uv.setXY(i, uv.getX(i)*fu, uv.getY(i)*fv);
+  uv.needsUpdate=true; geo.__grUV=true;
+}
+function clearGroup(g){while(g.children.length){const o=g.children.pop();if(o.geometry&&!o.geometry.__cached)o.geometry.dispose();if(o.material&&o.material.__shared!==true)o.material.dispose();}}
+function resetCamera(){
+if(!currentLayout)return;
+const Lm=currentLayout.L_in/1000,Wm=currentLayout.W_in/1000;
+const s=Math.max(Lm,Wm);
+threeCamera.position.set(Lm/2+s*1.0,s*1.15,Wm/2+s*1.0);
+threeControls.target.set(Lm/2,0,Wm/2);
+threeCamera.lookAt(threeControls.target);threeControls.update();
+}
+const geomCache={};
+const boxGeo=(w,h,d)=>{const k='b'+w+'_'+h+'_'+d;return geomCache[k]||(geomCache[k]=new THREE.BoxGeometry(w,h,d));};
+const cylGeo=(r,h,s)=>{const k='c'+r+'_'+h+'_'+s;return geomCache[k]||(geomCache[k]=new THREE.CylinderGeometry(r,r,h,s));};
+const sphGeo=(r,ws,hs)=>{const k='s'+r+'_'+ws+'_'+hs;return geomCache[k]||(geomCache[k]=new THREE.SphereGeometry(r,ws,hs));};
+function makeTee(len,mat,ud){
+const g=new THREE.Group();
+const fg=boxGeo(FLANGE_W,FLANGE_H,len);fg.__cached=true;
+const f=new THREE.Mesh(fg,mat);f.position.y=FLANGE_H/2;f.userData=ud;g.add(f);
+const wg=boxGeo(WEB_W,WEB_H,len);wg.__cached=true;
+const w=new THREE.Mesh(wg,mat);w.position.y=FLANGE_H+WEB_H/2;w.userData=ud;g.add(w);
+return g;
+}
+function update3D(){
+if(!threeInitialized||!currentLayout)return;
+const {L,W,L_in,W_in,lay,positionsX,totalRot,polygon,frameRigid,tile1200}=currentLayout;
+const {items,jMin,jMax,kMin,kMax,xS,yS,beams}=lay;
+const LmRoom=L_in/1000,WmRoom=W_in/1000;
+const Lm=L/1000,Wm=W/1000;
+const panelM=TILE_PANEL/1000;
+const HANGER_LEN=0.45,HANGER_R=0.003,CEIL_OFFSET=HANGER_LEN+0.05;
+clearGroup(threeRoomGroup);clearGroup(threeGridPivot);
+threeTilesGroup=new THREE.Group();threeTilesGroup.visible=showTilesChk.checked;threeGridPivot.add(threeTilesGroup);
+threeHangersGroup=new THREE.Group();threeHangersGroup.visible=hangersChk.checked;threeGridPivot.add(threeHangersGroup);
+const useClipPlanes=!polygon;
+let clipPlanes=[];
+if(useClipPlanes){
+clipPlanes=[
+new THREE.Plane(new THREE.Vector3(1,0,0),0),
+new THREE.Plane(new THREE.Vector3(-1,0,0),LmRoom),
+new THREE.Plane(new THREE.Vector3(0,0,1),0),
+new THREE.Plane(new THREE.Vector3(0,0,-1),WmRoom)
+];
+}
+const mMain=new THREE.MeshLambertMaterial({color:COL_MAIN_HEX,side:THREE.DoubleSide});if(useClipPlanes)mMain.clippingPlanes=clipPlanes;mMain.__shared=true;
+const m1200=new THREE.MeshLambertMaterial({color:COL_1200_HEX,side:THREE.DoubleSide});if(useClipPlanes)m1200.clippingPlanes=clipPlanes;m1200.__shared=true;
+const m600=new THREE.MeshLambertMaterial({color:COL_600_HEX,side:THREE.DoubleSide});if(useClipPlanes)m600.clippingPlanes=clipPlanes;m600.__shared=true;
+const mPlate=grLatticeMaterial();if(useClipPlanes)mPlate.clippingPlanes=clipPlanes;mPlate.__shared=true;
+const mJoint=new THREE.MeshLambertMaterial({color:COL_JOINT_HEX});if(useClipPlanes)mJoint.clippingPlanes=clipPlanes;mJoint.__shared=true;
+const mHanger=new THREE.MeshLambertMaterial({color:0x8a8f96});if(useClipPlanes)mHanger.clippingPlanes=clipPlanes;mHanger.__shared=true;
+threeGridPivot.position.set(LmRoom/2,0,WmRoom/2);
+threeGridPivot.rotation.y=-totalRot*Math.PI/180;
+const toLoc=(xg,zg)=>[xg-Lm/2,zg-Wm/2];
+
+const cosA=Math.cos(totalRot*Math.PI/180), sinA=Math.sin(totalRot*Math.PI/180);
+
+if(polygon){
+const pts=polygon.map(p=>new THREE.Vector3(p[0]/1000,0.001,p[1]/1000));
+pts.push(pts[0].clone());
+threeRoomGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x333333})));
+} else {
+threeRoomGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(LmRoom,0,0),new THREE.Vector3(LmRoom,0,WmRoom),new THREE.Vector3(0,0,WmRoom),new THREE.Vector3(0,0,0)]),new THREE.LineBasicMaterial({color:0x555555})));
+}
+
+if(threeCeilingMesh){threeCeilingMesh.geometry.dispose();threeCeilingMesh.material.dispose();threeScene.remove(threeCeilingMesh);}
+if(polygon){
+const shape=new THREE.Shape(polygon.map(p=>new THREE.Vector2(p[0]/1000,p[1]/1000)));
+const g=new THREE.ShapeGeometry(shape);
+g.rotateX(Math.PI/2);
+threeCeilingMesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0xe0e5ea,side:THREE.DoubleSide,transparent:true,opacity:0.35,depthWrite:false}));
+threeCeilingMesh.position.set(0,CEIL_OFFSET,0);
+} else {
+threeCeilingMesh=new THREE.Mesh(new THREE.PlaneGeometry(LmRoom,WmRoom),new THREE.MeshLambertMaterial({color:0xe0e5ea,side:THREE.DoubleSide,transparent:true,opacity:0.35,depthWrite:false}));
+threeCeilingMesh.rotation.x=-Math.PI/2;
+threeCeilingMesh.position.set(LmRoom/2,CEIL_OFFSET,WmRoom/2);
+}
+threeCeilingMesh.visible=showCeilingChk.checked;
+threeScene.add(threeCeilingMesh);
+
+const gapMM=(TILE_CELL-TILE_PANEL)/2,plateY=FLANGE_H+PLATE_T/2;
+const plateTitle=tile1200?'1200 × 600 × 12 мм':'600 × 600 × 12 мм';
+for(const tl of lay.tiles){
+  const tw=tl.w-2*gapMM, th=tl.h-2*gapMM;
+  if(tw<=0||th<=0) continue;
+  const cxmm=tl.x0+tl.w/2, cymm=tl.y0+tl.h/2;
+  let lx, lz;
+  if(polygon){
+    // для 1200х600 проверяем центр и обе половины плиты
+    const probes=[[cxmm,cymm]];
+    if(tile1200){
+      if(tl.w>tl.h){probes.push([cxmm-tl.w/4,cymm],[cxmm+tl.w/4,cymm]);}
+      else{probes.push([cxmm,cymm-tl.h/4],[cxmm,cymm+tl.h/4]);}
+    }
+    let ok=false;
+    for(const [px,py] of probes){
+      const dxw=px-L/2, dyw=py-W/2;
+      const dX=dxw*cosA-dyw*sinA+L_in/2, dY=dxw*sinA+dyw*cosA+W_in/2;
+      if(pointInPoly(polygon,dX,dY)){ok=true;break;}
+    }
+    if(!ok) continue;
+    const dxw = cxmm - L/2, dyw = cymm - W/2;
+    const dispX = dxw*cosA - dyw*sinA + L_in/2;
+    const dispY = dxw*sinA + dyw*cosA + W_in/2;
+    const dxp = dispX/1000 - LmRoom/2;
+    const dzp = dispY/1000 - WmRoom/2;
+    lx = dxp*cosA + dzp*sinA;
+    lz = -dxp*sinA + dzp*cosA;
+  } else {
+    const p=toLoc(cxmm/1000,cymm/1000); lx=p[0]; lz=p[1];
+  }
+  const pGeo = boxGeo(tw/1000, PLATE_T, th/1000);
+  pGeo.__cached = true; grScaleUV(pGeo, tw, th);
+  const mesh=new THREE.Mesh(pGeo,mPlate);
+  mesh.position.set(lx,plateY,lz);
+  mesh.userData={title:'Решётка грильято',size:'600 × 600 мм',qty:'—',spacing:'ячейка '+((currentLayout.gr&&currentLayout.gr.grCell)||100)+'×'+((currentLayout.gr&&currentLayout.gr.grCell)||100)+' мм'};
+  threeTilesGroup.add(mesh);
+}
+const ud3600={title:'Несущая '+MAIN_LENGTH,size:MAIN_LENGTH+' мм',qty:'—',spacing:(lay.tileMode==='along'||frameRigid)?'шаг 600 мм между осями':'шаг 1200 мм между осями'};
+const ud1200={title:'Поперечная 1200',size:'1200 мм',qty:'—',spacing:'между парами несущих'};
+const ud600 ={title:'Поперечная 600',size:'600 мм',qty:'—',spacing:'в полосе 1200 / пристенная'};
+for(const it of items){
+let mat,ud;
+if(it.type===3600){mat=mMain;ud=ud3600;}
+else if(it.type===1200){mat=m1200;ud=ud1200;}
+else{mat=m600;ud=ud600;}
+if(polygon){
+const segs=lay.clipItem(it);
+for(const seg of segs){
+const x1=seg[0],y1=seg[1],x2=seg[2],y2=seg[3];
+const cx=(x1+x2)/2/1000, cz=(y1+y2)/2/1000;
+const lenM=Math.hypot(x2-x1,y2-y1)/1000;
+if(lenM<0.005) continue;
+const dxp = cx - LmRoom/2;
+const dzp = cz - WmRoom/2;
+const lx = dxp*cosA + dzp*sinA;
+const lz = -dxp*sinA + dzp*cosA;
+const t=makeTee(lenM,mat,ud);
+if(it.ori==='h') t.rotation.y=Math.PI/2;
+t.position.set(lx,0,lz);
+threeGridPivot.add(t);
+}
+} else {
+if(it.type===3600){
+const zg=it.y/1000;
+const xa0=it.x-it.len/2,xa1=it.x+it.len/2;
+const pieces=Math.max(1,Math.ceil(it.len/MAIN_LENGTH));
+for(let q=0;q<pieces;q++){
+const xa=xa0+q*MAIN_LENGTH;
+const xb=Math.min(xa0+(q+1)*MAIN_LENGTH,xa1);
+if(xa>=xa1) break;
+const lenM=(xb-xa)/1000;
+const [lx,lz]=toLoc((xa+xb)/2/1000,zg);
+const t=makeTee(lenM,mMain,ud3600);
+t.rotation.y=Math.PI/2;t.position.set(lx,0,lz);
+threeGridPivot.add(t);
+}
+for(let q=1;q<pieces;q++){
+const xA=xa0+q*MAIN_LENGTH;
+if(xA>=xa1) break;
+const [lx,lz]=toLoc(xA/1000,zg);
+const jGeo=sphGeo(0.035,12,10);jGeo.__cached=true;
+const m=new THREE.Mesh(jGeo,mJoint);
+m.position.set(lx,FLANGE_H+WEB_H/2,lz);
+threeGridPivot.add(m);
+}
+} else {
+const lenM=it.len/1000;
+const [lx,lz]=toLoc(it.x/1000,it.y/1000);
+const t=makeTee(lenM,mat,ud);
+if(it.ori==='h') t.rotation.y=Math.PI/2;
+t.position.set(lx,0,lz);
+threeGridPivot.add(t);
+}
+}
+}
+const hGeo=cylGeo(HANGER_R,HANGER_LEN,6);hGeo.__cached=true;
+for(const yb of beams){
+const zg=yb/1000;
+for(const xAbs of positionsX){
+let lx, lz;
+if(polygon){
+  const dxw = xAbs - L/2, dyw = yb - W/2;
+  const dispX = dxw*cosA - dyw*sinA + L_in/2;
+  const dispY = dxw*sinA + dyw*cosA + W_in/2;
+  if(!pointInPoly(polygon, dispX, dispY)) continue;
+  const dxp = dispX/1000 - LmRoom/2;
+  const dzp = dispY/1000 - WmRoom/2;
+  lx = dxp*cosA + dzp*sinA;
+  lz = -dxp*sinA + dzp*cosA;
+} else {
+  const p=toLoc(xAbs/1000,zg); lx=p[0]; lz=p[1];
+}
+const m=new THREE.Mesh(hGeo,mHanger);
+m.position.set(lx,FLANGE_H+WEB_H+HANGER_LEN/2,lz);
+threeHangersGroup.add(m);
+}
+}
+resetCamera();
+}
+
+// ===== PDF =====
+async function generateRoomPdf(view){
+if(!currentLayout){alert('Сначала расчёт.');return;}
+if(!window.jspdf||!window.jspdf.jsPDF){alert('jsPDF не загружен.');return;}
+if(view==='3d'&&!ensure3D())return;
+const {jsPDF}=window.jspdf;
+const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+const PW=210,PH=297,M=15;
+let logoPng=null;try{logoPng=await svgStringToPngDataURL(LOGO_SVG,220,220,false);}catch(e){}
+addPdfLogo(doc,logoPng);
+doc.setFont('helvetica','bold');doc.setFontSize(15);doc.setTextColor(20,20,20);doc.text('CUBICA',M+18,20);
+doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,120);doc.text('modern ceiling solutions',M+18,26);
+doc.setFontSize(8.5);doc.setTextColor(80,80,80);doc.text('Ceiling layout calculator',M+18,31);
+doc.setDrawColor(200,200,200);doc.setLineWidth(0.2);doc.line(M,34,PW-M,34);
+addPdfWatermark(doc);
+let imgData=null;
+try{
+if(view==='2d'){const svg=document.querySelector('#ac-layout svg');if(svg){const clone=svg.cloneNode(true);clone.setAttribute('width','1280');clone.setAttribute('height','880');const svgData=new XMLSerializer().serializeToString(clone);imgData=await svgStringToPngDataURL(svgData,1280,880,false);}}
+else{threeRenderer.render(threeScene,threeCamera);imgData=threeRenderer.domElement.toDataURL('image/png');}
+}catch(e){console.error(e);}
+const modelTopY=42,modelW=PW-2*M,modelH=modelW*0.55;
+if(imgData){doc.setDrawColor(220,220,220);doc.setLineWidth(0.3);doc.rect(M,modelTopY,modelW,modelH);doc.addImage(imgData,'PNG',M+1,modelTopY+1,modelW-2,modelH-2);}
+const specTopY=modelTopY+modelH+8;
+let ty=await drawSpecImageWithHeader(doc,currentLayout.specRows,M,PW,specTopY);
+doc.setFontSize(8);doc.setTextColor(150,150,150);
+doc.text('L '+currentLayout.L_in+' × W '+currentLayout.W_in+' mm — CUBICA.BY',PW/2,PH-10,{align:'center'});
+doc.save('CUBICA_RAIL_'+view.toUpperCase()+'_'+currentLayout.L_in+'x'+currentLayout.W_in+'.pdf');
+}
+
+async function generateProjectPdf(view){
+if(!project.length){alert('Проект пуст.');return;}
+if(!window.jspdf||!window.jspdf.jsPDF){alert('jsPDF не загружен.');return;}
+if(view==='3d'&&!ensure3D())return;
+const {jsPDF}=window.jspdf;
+const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+const PW=210,PH=297,M=15;
+let logoPng=null;try{logoPng=await svgStringToPngDataURL(LOGO_SVG,220,220,false);}catch(e){}
+addPdfLogo(doc,logoPng);
+doc.setFont('helvetica','bold');doc.setFontSize(15);doc.setTextColor(20,20,20);doc.text('CUBICA — Project',M+18,20);
+doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,120);doc.text('Total rooms: '+project.length,M+18,26);
+doc.setDrawColor(200,200,200);doc.setLineWidth(0.2);doc.line(M,34,PW-M,34);
+addPdfWatermark(doc);
+let ty=42;
+ty=await drawSpecImageWithHeader(doc,computeTotals(),M,PW,ty);
+ty+=4;
+if(ty>240){doc.addPage();ty=30;}
+doc.setFontSize(8);doc.setTextColor(150,150,150);
+doc.text('Project total — CUBICA.BY',PW/2,PH-10,{align:'center'});
+doc.save('CUBICA_RAIL_PROJECT_'+view.toUpperCase()+'.pdf');
+}
+
+async function generatePdf(view){
+if(specMode==='total')await generateProjectPdf(view);
+else await generateRoomPdf(view);
+}
+
+// ===== ПРОЕКТ =====
+function snapshotRoom(){
+return {
+L_in:currentLayout.L_in,W_in:currentLayout.W_in,
+offsetX:parseFloat(offsetXSlider.value),offsetY:parseFloat(offsetYSlider.value),
+rotationDeg:parseFloat(rotationSlider.value),rotated90:rotated90,
+standardMode:standardMode,
+tile1200:!!tile1200Chk.checked,
+frameRigid:!!frameRigidChk.checked,
+hangers:!!hangersChk.checked,
+hangerHeight:parseFloat(hangerHInput.value)||0,
+...grState(),
+areaM2:currentLayout.areaM2,
+polygon:roomPolygon?roomPolygon.map(p=>[p[0],p[1]]):null,
+specRows:currentLayout.specRows.map(r=>({...r}))
+};
+}
+// Итог по проекту: суммируем по НАЗВАНИЮ позиции (а не по номеру строки),
+// т.к. у помещений 600х600 и 1200х600 разный набор строк
+function computeTotals(){
+if(!project.length) return [];
+let area=0;const map={},order=[];
+for(const room of project){
+  for(const r of (room.specRows||[])){
+    if(!r) continue;
+    if(r.kind==='area'){area+=Number(r.num)||0;continue;}
+    const mk=r.label+grRalSuffix(r.label,r._gr);
+    if(!map[mk]){map[mk]={label:r.label,num:0,kind:r.kind,color:r.color,unit:r.unit||'шт.',_gr:r._gr};order.push(mk);}
+    map[mk].num+=Number(r.num)||0;
+    if(r.kind==='approx') map[mk].kind='approx';
+  }
+}
+const out=[{label:'Площадь',value:area.toFixed(2)+' м²',num:area,kind:'area'}];
+const prio=l=>/«мама»/.test(l)?0:/«папа»/.test(l)?1:/L-планка/.test(l)?2:/3600|2400/.test(l)?3:/Соединитель/.test(l)?4:/1200/.test(l)?5:/ 600/.test(l)?6:/Уголок/.test(l)?7:9;
+order.sort((a,b)=>prio(map[a].label)-prio(map[b].label)); // стабильная сортировка: остальное — в порядке спецификации
+for(const k of order){
+  const r=map[k];const n=Math.round(r.num);
+  out.push({label:r.label,value:(r.kind==='approx'?'≈ ':'')+n+' '+(r.unit||'шт.'),num:n,kind:r.kind,color:r.color,unit:r.unit||'шт.',_gr:r._gr});
+}
+return out;
+}
+function renderSpec(){
+let source;
+if(specMode==='total') source=computeTotals();
+else source=currentLayout?currentLayout.specRows:[];
+if(!source||!source.length){resultsDiv.innerHTML='<p style="color:#999;font-size:12px;font-style:italic;text-align:center;padding:8px 0">Нет данных.</p>';return;}
+let html='<ul>';
+for(const row of source){
+const c=row.color?'<span class="cl" style="background:'+row.color+'"></span>':'';
+const shown=row.kind==='area'?row.label:armShownLabel(row.label)+grRalSuffix(row.label,row._gr);
+const bound=row.kind!=='area'&&armRoleOf(row.label)&&!armBinding(row.label);
+html+='<li>'+c+'<span class="lb"'+(shown!==row.label?' title="Роль: '+row.label+'"':'')+'>'+shown+(bound?' <span style="color:#b26a00;font-size:10px" title="Роль не привязана к позиции 1С — привяжите в журнале: Справочник → Роли Армстронга">· не привязано</span>':'')+'</span><span class="vl">'+row.value+'</span></li>';
+}
+html+='</ul>';
+if(specMode==='current'&&currentLayout&&currentLayout.warnings&&currentLayout.warnings.length){
+for(const w of currentLayout.warnings){
+const cls=(w.indexOf('📐')===0||w.indexOf('ℹ')===0||w.indexOf('✏️')===0)?'info':'warn';
+html+='<div class="ac-note '+cls+'">'+w+'</div>';
+}
+}
+resultsDiv.innerHTML=html;
+}
+function renderProjectList(){
+projectCountEl.textContent=project.length;
+if(!project.length){
+projectListEl.innerHTML='<div class="ac-pje">Пока пусто. Введите размеры и нажмите «+ Новое помещение».</div>';
+return;
+}
+projectListEl.innerHTML=project.map((p,i)=>{
+const active=(i===activeRoomIndex)?' active':'';
+let mark='';
+if(p.standardMode) mark+=' 📐';
+mark+=' · '+(p.grSys==='gl15'||!p.grSys?'GL15':(p.grSys==='cl40'?'Кл.40':'Кл.27'))+' '+(p.grCell||100);
+if(p.polygon) mark+=' ✏️';
+return '<li class="ac-pji'+active+'" data-idx="'+i+'" title="Нажмите, чтобы загрузить"><span class="ac-pjn">'+p.name+mark+'</span><span class="ac-pjd">'+p.L_in+' × '+p.W_in+' мм</span><button type="button" class="ac-pjx" data-idx="'+i+'" title="Удалить">✕</button></li>';
+}).join('');
+projectListEl.querySelectorAll('.ac-pji').forEach(li=>{
+li.addEventListener('click',e=>{if(e.target.closest('.ac-pjx')) return;activateRoomGuarded(parseInt(li.dataset.idx,10));});
+});
+projectListEl.querySelectorAll('.ac-pjx').forEach(btn=>{
+btn.addEventListener('click',e=>{e.stopPropagation();removeFromProject(parseInt(e.currentTarget.dataset.idx,10));});
+});
+}
+
+async function activateRoomGuarded(index){
+  if(index === activeRoomIndex) return;
+  if(hasUnsavedChanges() && activeRoomIndex !== null){
+    const choice = await askUnsavedChanges(project[activeRoomIndex].name);
+    if(choice === 'cancel') return;
+    if(choice === 'save') saveRoomSilent();
+  }
+  activateRoom(index);
+}
+
+function activateRoom(index){
+const r=project[index];if(!r) return;
+activeRoomIndex=index;
+lengthInput.value=r.L_in;widthInput.value=r.W_in;
+offsetXSlider.value=r.offsetX;offsetYSlider.value=r.offsetY;
+rotationSlider.value=r.rotationDeg;
+rotated90=!!r.rotated90;rotate90Btn.classList.toggle('active',rotated90);
+standardMode=!!r.standardMode;standardBtn.classList.toggle('active',standardMode);
+tile1200Chk.checked=false;
+frameRigidChk.checked=!!r.frameRigid;
+grApplyState(r);
+if(r.hangers!==undefined) hangersChk.checked=!!r.hangers;
+if(r.hangerHeight!==undefined) hangerHInput.value=r.hangerHeight;
+syncHangerUI();
+roomPolygon=r.polygon?r.polygon.map(p=>[p[0],p[1]]):null;
+updateLabels();calculate();
+// помещение загружено из журнала без спецификации — заполняем её расчётом
+if(currentLayout && (!r.specRows || !r.specRows.length)){
+  r.specRows=currentLayout.specRows.map(x=>({...x}));
+  r.areaM2=currentLayout.areaM2;
+}
+specMode='current';
+specToggleEl.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.specmode==='current'));
+renderProjectList();renderSpec();
+lastSavedSnapshot = snapshotKey(snapshotRoom());
+updateWorkLabel();
+}
+
+function removeFromProject(index) {
+  if (!project[index]) return;
+  if (activeRoomIndex === index) {
+    if (hasUnsavedChanges()) {
+      if (!confirm('В текущем помещении есть несохранённые изменения. Удалить его из проекта?')) return;
+    }
+  }
+  project.splice(index, 1);
+  if (activeRoomIndex === index) {
+    activeRoomIndex = null;
+    lastSavedSnapshot = null;
+    resetForNewRoom();
+  } else if (activeRoomIndex > index) {
+    activeRoomIndex--;
+  }
+  renderProjectList();
+  renderSpec();
+  updateWorkLabel();
+  showToast('Помещение удалено');
+}
+function clearProject(){
+if(!project.length) return;
+if(!confirm('Удалить все помещения из проекта?')) return;
+project=[];activeRoomIndex=null;lastSavedSnapshot=null;
+renderProjectList();renderSpec();updateWorkLabel();
+}
+
+function updateLabels(){
+const ox=parseFloat(offsetXSlider.value),oy=parseFloat(offsetYSlider.value),rot=parseFloat(rotationSlider.value);
+offsetXVal.textContent=(ox>0?'+':'')+ox+' мм';
+offsetYVal.textContent=(oy>0?'+':'')+oy+' мм';
+rotationVal.textContent=rot===0?'0°':(rot>0?rot+'° по час. ↻':Math.abs(rot)+'° против час. ↺');
+}
+
+offsetXSlider.addEventListener('input',()=>{updateLabels();calculate();});
+offsetYSlider.addEventListener('input',()=>{updateLabels();calculate();});
+rotationSlider.addEventListener('input',()=>{updateLabels();calculate();});
+lengthInput.addEventListener('input',()=>{roomPolygon=null;calculate();});
+widthInput.addEventListener('input',()=>{roomPolygon=null;calculate();});
+rotate90Btn.addEventListener('click',()=>{rotated90=!rotated90;rotate90Btn.classList.toggle('active',rotated90);calculate();});
+standardBtn.addEventListener('click',()=>{standardMode=!standardMode;standardBtn.classList.toggle('active',standardMode);calculate();});
+addBtn.addEventListener('click',newRoomAction);
+updateBtn.addEventListener('click',saveRoomExplicit);
+projectClearBtn.addEventListener('click',clearProject);
+
+specToggleEl.querySelectorAll('button').forEach(btn=>{
+btn.addEventListener('click',()=>{
+specMode=btn.dataset.specmode;
+specToggleEl.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===btn));
+renderSpec();
+});
+});
+
+toggleBtns.forEach(btn=>{
+btn.addEventListener('click',()=>{
+const v=btn.dataset.view;if(v===currentView)return;
+currentView=v;toggleBtns.forEach(b=>b.classList.toggle('active',b===btn));
+if(v==='2d'){layout2dDiv.style.display='';layout3dDiv.style.display='none';}
+else{layout2dDiv.style.display='none';layout3dDiv.style.display='';requestAnimationFrame(()=>{if(!ensure3D()){currentView='2d';toggleBtns.forEach(b=>b.classList.toggle('active',b.dataset.view==='2d'));layout2dDiv.style.display='';layout3dDiv.style.display='none';return;}if(currentLayout){update3D();applyVisibility();}});}
+});
+});
+camResetBtn.addEventListener('click',()=>{if(!ensure3D()) return;if(currentView!=='3d'){const b=document.querySelector('button[data-view="3d"]');if(b)b.click();return;}resetCamera();});
+save2dBtn.addEventListener('click',()=>generatePdf('2d'));
+save3dBtn.addEventListener('click',()=>{if(!ensure3D())return;if(currentLayout)update3D();generatePdf('3d');});
+
+function applyVisibility(){
+if(threeTilesGroup)threeTilesGroup.visible=showTilesChk.checked;
+if(threeHangersGroup)threeHangersGroup.visible=hangersChk.checked;
+if(threeCeilingMesh)threeCeilingMesh.visible=showCeilingChk.checked;
+}
+[showTilesChk,showCeilingChk].forEach(c=>c.addEventListener('change',applyVisibility));
+
+hangersChk.addEventListener('change',()=>{syncHangerUI();calculate();});
+hangerHInput.addEventListener('input',()=>{syncHangerUI();calculate();});
+
+// НОВЫЕ ГАЛОЧКИ
+tile1200Chk.addEventListener('change',()=>{calculate();});
+[grSysSel,grCellSel,grColorSel].forEach(el=>el.addEventListener('change',()=>{syncGrUI();calculate();if(threeInitialized)update3D();}));
+grRalInput.addEventListener('input',()=>{calculate();});
+frameRigidChk.addEventListener('change',()=>{calculate();});
+
+// ===== РЕДАКТОР КОНТУРА =====
+const drawModal=$('ac-draw-modal'),drawCanvas=$('ac-draw-canvas'),drawCtx=drawCanvas.getContext('2d');
+const drawUndoBtn=$('ac-draw-undo'),drawCloseContourBtn=$('ac-draw-close-contour'),drawClearBtn=$('ac-draw-clear');
+const drawCancelBtn=$('ac-draw-cancel'),drawApplyBtn=$('ac-draw-apply');
+const drawLengthInput=$('ac-draw-length-input'),drawModeEl=$('ac-draw-mode');
+const segListEl=$('ac-seg-list'),modalWarnEl=$('ac-modal-warn');
+let drawStart=null,drawSegments=[],drawClosed=false,autoAddedCount=0,cursorMm=null;
+let vOX=0,vOY=0,vS=0.08,targetOX=0,targetOY=0,targetS=0.08,animRAF=null;
+let edgeStretch=null,stretchRAF=null;
+const EDGE_ZONE=60,MAX_SEG_LEN=15000;
+
+function walkPoints(){const r=[];if(!drawStart)return r;let x=drawStart[0],y=drawStart[1];r.push([x,y]);for(const s of drawSegments){if(s.axis==='x')x+=s.sign*s.len;else y+=s.sign*s.len;r.push([x,y]);}return r;}
+function snap(v){return Math.round(v/100)*100;}
+function pushSegment(axis,sign,len){const last=drawSegments[drawSegments.length-1];if(last&&last.axis===axis&&last.sign===sign){last.len=snap(last.len+len);return;}drawSegments.push({axis,sign,len});}
+function collapseTailIfPossible(){while(drawSegments.length>=2){const a=drawSegments[drawSegments.length-2];const b=drawSegments[drawSegments.length-1];if(a.axis===b.axis&&a.sign===b.sign){a.len=snap(a.len+b.len);drawSegments.pop();}else break;}}
+function segmentsAbs(){const out=[];if(!drawStart)return out;let x=drawStart[0],y=drawStart[1];for(let i=0;i<drawSegments.length;i++){const s=drawSegments[i];const x1=x,y1=y;if(s.axis==='x')x+=s.sign*s.len;else y+=s.sign*s.len;out.push({x1,y1,x2:x,y2:y,idx:i});}return out;}
+function segmentAbsFrom(s,startX,startY){let x2=startX,y2=startY;if(s.axis==='x')x2+=s.sign*s.len;else y2+=s.sign*s.len;return{x1:startX,y1:startY,x2,y2};}
+function segConflictsWith(newAbs,t,tIdx,allowIdx){const nH=Math.abs(newAbs.y1-newAbs.y2)<0.01;const tH=Math.abs(t.y1-t.y2)<0.01;const nx1=Math.min(newAbs.x1,newAbs.x2),nx2=Math.max(newAbs.x1,newAbs.x2);const ny1=Math.min(newAbs.y1,newAbs.y2),ny2=Math.max(newAbs.y1,newAbs.y2);const tx1=Math.min(t.x1,t.x2),tx2=Math.max(t.x1,t.x2);const ty1=Math.min(t.y1,t.y2),ty2=Math.max(t.y1,t.y2);if(Math.max(nx1,tx1)>Math.min(nx2,tx2)+WALL_TOL)return false;if(Math.max(ny1,ty1)>Math.min(ny2,ty2)+WALL_TOL)return false;if(nH&&tH){if(Math.abs(newAbs.y1-t.y1)>WALL_TOL)return false;const lo=Math.max(nx1,tx1),hi=Math.min(nx2,tx2);const ov=hi-lo;if(ov>WALL_TOL)return true;if(Math.abs(ov)<=WALL_TOL){if(tIdx===allowIdx)return false;return true;}return false;}if(!nH&&!tH){if(Math.abs(newAbs.x1-t.x1)>WALL_TOL)return false;const lo=Math.max(ny1,ty1),hi=Math.min(ny2,ty2);const ov=hi-lo;if(ov>WALL_TOL)return true;if(Math.abs(ov)<=WALL_TOL){if(tIdx===allowIdx)return false;return true;}return false;}let hSeg,vSeg;if(nH){hSeg=newAbs;vSeg=t;}else{hSeg=t;vSeg=newAbs;}const ix=vSeg.x1,iy=hSeg.y1;const hx1=Math.min(hSeg.x1,hSeg.x2),hx2=Math.max(hSeg.x1,hSeg.x2);const vy1=Math.min(vSeg.y1,vSeg.y2),vy2=Math.max(vSeg.y1,vSeg.y2);if(ix<hx1-WALL_TOL||ix>hx2+WALL_TOL)return false;if(iy<vy1-WALL_TOL||iy>vy2+WALL_TOL)return false;function isEnd(seg,x,y){return(Math.abs(seg.x1-x)<WALL_TOL&&Math.abs(seg.y1-y)<WALL_TOL)||(Math.abs(seg.x2-x)<WALL_TOL&&Math.abs(seg.y2-y)<WALL_TOL);}const nEnd=isEnd(newAbs,ix,iy);const tEnd=isEnd(t,ix,iy);if(nEnd&&tEnd)return false;return true;}
+function conflictsWithExisting(newAbs,allowIdx){const existing=segmentsAbs();for(const e of existing)if(segConflictsWith(newAbs,e,e.idx,allowIdx))return true;return false;}
+function rubberSeg(){if(!cursorMm)return null;const pts=walkPoints();if(pts.length===0)return null;const last=pts[pts.length-1];const dx=cursorMm[0]-last[0],dy=cursorMm[1]-last[1];if(Math.abs(dx)<1&&Math.abs(dy)<1)return null;if(Math.abs(dx)>=Math.abs(dy))return{axis:'x',sign:dx>=0?1:-1,len:Math.abs(dx)};return{axis:'y',sign:dy>=0?1:-1,len:Math.abs(dy)};}
+function computeSnappedCursor(rawX,rawY){const pts=walkPoints();if(pts.length===0)return[snap(rawX),snap(rawY)];const last=pts[pts.length-1],first=pts[0];if(drawSegments.length>=2){const d=Math.hypot(rawX-first[0],rawY-first[1]);if(d<400)return[first[0],first[1]];}let dx=rawX-last[0],dy=rawY-last[1];if(Math.abs(dx)>=Math.abs(dy)){if(dx>MAX_SEG_LEN)dx=MAX_SEG_LEN;if(dx<-MAX_SEG_LEN)dx=-MAX_SEG_LEN;return[snap(last[0]+dx),last[1]];}if(dy>MAX_SEG_LEN)dy=MAX_SEG_LEN;if(dy<-MAX_SEG_LEN)dy=-MAX_SEG_LEN;return[last[0],snap(last[1]+dy)];}
+function computeTargetTransform(){const W=drawCanvas.width,H=drawCanvas.height;const pts=walkPoints();if(pts.length===0)return{ox:W/2,oy:H/2,s:0.08};if(pts.length===1&&!edgeStretch)return{ox:vOX,oy:vOY,s:vS};let xmin=Infinity,ymin=Infinity,xmax=-Infinity,ymax=-Infinity;for(const p of pts){if(p[0]<xmin)xmin=p[0];if(p[0]>xmax)xmax=p[0];if(p[1]<ymin)ymin=p[1];if(p[1]>ymax)ymax=p[1];}if(cursorMm&&edgeStretch){if(cursorMm[0]<xmin)xmin=cursorMm[0];if(cursorMm[0]>xmax)xmax=cursorMm[0];if(cursorMm[1]<ymin)ymin=cursorMm[1];if(cursorMm[1]>ymax)ymax=cursorMm[1];}const m=500;xmin-=m;xmax+=m;ymin-=m;ymax+=m;const cxb=(xmin+xmax)/2,cyb=(ymin+ymax)/2;const wbb=Math.max(xmax-xmin,2600),hbb=Math.max(ymax-ymin,1500);const s=Math.min(W*0.45/wbb,H*0.45/hbb);const ox=W/2-cxb*s,oy=H/2-cyb*s;return{ox,oy,s};}
+function startViewAnimation(){if(animRAF)return;const tick=()=>{const k=0.12;vOX+=(targetOX-vOX)*k;vOY+=(targetOY-vOY)*k;vS+=(targetS-vS)*k;paintDraw();const done=(Math.abs(targetOX-vOX)<0.5&&Math.abs(targetOY-vOY)<0.5&&Math.abs(targetS-vS)<0.0003);if(done){vOX=targetOX;vOY=targetOY;vS=targetS;paintDraw();animRAF=null;return;}animRAF=requestAnimationFrame(tick);};animRAF=requestAnimationFrame(tick);}
+function paintDraw(){const W=drawCanvas.width,H=drawCanvas.height;drawCtx.clearRect(0,0,W,H);drawCtx.fillStyle='#ffffff';drawCtx.fillRect(0,0,W,H);const pts=walkPoints();if(pts.length===0){drawCtx.fillStyle='#c8c8c8';drawCtx.font='13px Segoe UI';drawCtx.textAlign='center';drawCtx.fillText('Кликните по холсту, чтобы задать первую точку',W/2,34);return;}const ox=vOX,oy=vOY,s=vS;let gridStep=500;if(s*gridStep<18)gridStep=1000;if(s*gridStep<6)gridStep=2000;if(s*gridStep>110)gridStep=250;drawCtx.strokeStyle='#eef0f3';drawCtx.lineWidth=1;const gx0=Math.floor((0-ox)/s/gridStep)*gridStep,gx1=Math.ceil((W-ox)/s/gridStep)*gridStep;for(let x=gx0;x<=gx1;x+=gridStep){const px=ox+x*s;drawCtx.beginPath();drawCtx.moveTo(px,0);drawCtx.lineTo(px,H);drawCtx.stroke();}const gy0=Math.floor((0-oy)/s/gridStep)*gridStep,gy1=Math.ceil((H-oy)/s/gridStep)*gridStep;for(let y=gy0;y<=gy1;y+=gridStep){const py=oy+y*s;drawCtx.beginPath();drawCtx.moveTo(0,py);drawCtx.lineTo(W,py);drawCtx.stroke();}drawCtx.strokeStyle='#cfd6de';drawCtx.lineWidth=1.5;drawCtx.beginPath();drawCtx.moveTo(ox,0);drawCtx.lineTo(ox,H);drawCtx.stroke();drawCtx.beginPath();drawCtx.moveTo(0,oy);drawCtx.lineTo(W,oy);drawCtx.stroke();const dispPts=pts.slice();if(drawClosed){const last=dispPts[dispPts.length-1],first=dispPts[0];if(Math.abs(last[0]-first[0])>1||Math.abs(last[1]-first[1])>1)dispPts.push([first[0],first[1]]);}drawCtx.strokeStyle='#c00000';drawCtx.lineWidth=3;drawCtx.beginPath();drawCtx.moveTo(ox+dispPts[0][0]*s,oy+dispPts[0][1]*s);for(let i=1;i<dispPts.length;i++)drawCtx.lineTo(ox+dispPts[i][0]*s,oy+dispPts[i][1]*s);drawCtx.stroke();if(!drawClosed&&cursorMm){const last=pts[pts.length-1];drawCtx.strokeStyle='#c00000';drawCtx.lineWidth=2;drawCtx.setLineDash([8,6]);drawCtx.beginPath();drawCtx.moveTo(ox+last[0]*s,oy+last[1]*s);drawCtx.lineTo(ox+cursorMm[0]*s,oy+cursorMm[1]*s);drawCtx.stroke();drawCtx.setLineDash([]);}for(const[x,y]of pts){drawCtx.fillStyle='#1565c0';drawCtx.beginPath();drawCtx.arc(ox+x*s,oy+y*s,5,0,Math.PI*2);drawCtx.fill();drawCtx.strokeStyle='#fff';drawCtx.lineWidth=1.5;drawCtx.stroke();}drawCtx.fillStyle='#2e7d32';drawCtx.beginPath();drawCtx.arc(ox+pts[0][0]*s,oy+pts[0][1]*s,7,0,Math.PI*2);drawCtx.fill();drawCtx.strokeStyle='#fff';drawCtx.lineWidth=2;drawCtx.stroke();if(!drawClosed&&drawSegments.length>=2&&cursorMm){const first=pts[0];const near=Math.abs(cursorMm[0]-first[0])<1&&Math.abs(cursorMm[1]-first[1])<1;if(near){drawCtx.strokeStyle='#2e7d32';drawCtx.lineWidth=2.5;drawCtx.beginPath();drawCtx.arc(ox+first[0]*s,oy+first[1]*s,14,0,Math.PI*2);drawCtx.stroke();drawCtx.font='bold 11px Segoe UI';drawCtx.textAlign='center';drawCtx.fillStyle='#2e7d32';drawCtx.fillText('Замкнуть',ox+first[0]*s,oy+first[1]*s-20);}}for(let i=0;i<drawSegments.length;i++){const a=pts[i],b=pts[i+1];if(!b)break;const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;const label=drawSegments[i].len+' мм';drawCtx.font='bold 12px Segoe UI';drawCtx.textAlign='center';const tw=drawCtx.measureText(label).width+10;const px=ox+mx*s,py=oy+my*s;drawCtx.fillStyle='rgba(255,255,255,0.92)';drawCtx.fillRect(px-tw/2,py-10,tw,18);drawCtx.fillStyle='#c00000';drawCtx.fillText(label,px,py+4);}}
+function redrawDraw(immediate){const t=computeTargetTransform();targetOX=t.ox;targetOY=t.oy;targetS=t.s;if(immediate){vOX=t.ox;vOY=t.oy;vS=t.s;paintDraw();return;}startViewAnimation();}
+function updateDrawHud(){if(edgeStretch){drawModeEl.textContent='⇢ Авто: '+Math.round(edgeStretch.length)+' мм';drawModeEl.style.color='#d32f2f';return;}const seg=rubberSeg();if(drawClosed){drawModeEl.textContent='✓ Контур замкнут';drawModeEl.style.color='#2e7d32';}else if(drawStart===null){drawModeEl.textContent='Кликните по холсту.';drawModeEl.style.color='#6a1b9a';}else if(cursorMm&&drawSegments.length>=2){const first=walkPoints()[0];if(Math.abs(cursorMm[0]-first[0])<1&&Math.abs(cursorMm[1]-first[1])<1){drawModeEl.textContent='🔒 Клик — замкнуть';drawModeEl.style.color='#2e7d32';return;}}if(drawStart!==null&&seg){drawModeEl.textContent='Стена: '+Math.round(seg.len)+' мм';drawModeEl.style.color='#c00000';}}
+function updateModalWarn(){let txt='';if(drawClosed)txt='✓ Контур замкнут.';if(txt){modalWarnEl.textContent=txt;modalWarnEl.classList.add('show');modalWarnEl.classList.remove('err');}else modalWarnEl.classList.remove('show');}
+function showErr(msg){modalWarnEl.textContent=msg;modalWarnEl.classList.add('show');modalWarnEl.classList.add('err');clearTimeout(modalWarnEl._t);modalWarnEl._t=setTimeout(()=>{modalWarnEl.classList.remove('show');modalWarnEl.classList.remove('err');updateModalWarn();},3500);}
+function getCanvasMouseMm(evt){const rect=drawCanvas.getBoundingClientRect();const sx=drawCanvas.width/rect.width,sy=drawCanvas.height/rect.height;const cx=(evt.clientX-rect.left)*sx,cy=(evt.clientY-rect.top)*sy;return[(cx-vOX)/vS,(cy-vOY)/vS];}
+function tickEdgeStretch(){if(!edgeStretch){stretchRAF=null;return;}const now=performance.now();const dt=Math.min(0.05,(now-edgeStretch.lastTick)/1000);edgeStretch.lastTick=now;edgeStretch.length+=edgeStretch.rate*dt;if(edgeStretch.length>MAX_SEG_LEN)edgeStretch.length=MAX_SEG_LEN;const pts=walkPoints();if(!pts.length){edgeStretch=null;stretchRAF=null;return;}const last=pts[pts.length-1];cursorMm=edgeStretch.axis==='x'?[last[0]+edgeStretch.sign*edgeStretch.length,last[1]]:[last[0],last[1]+edgeStretch.sign*edgeStretch.length];redrawDraw();updateDrawHud();stretchRAF=requestAnimationFrame(tickEdgeStretch);}
+function stopEdgeStretch(){edgeStretch=null;if(stretchRAF){cancelAnimationFrame(stretchRAF);stretchRAF=null;}}
+function tryCloseContour(){if(drawSegments.length<2)return{ok:false,reason:'Мало сторон.'};const pts=walkPoints();if(pts.length<3)return{ok:false,reason:'Мало сторон.'};const first=pts[0],last=pts[pts.length-1];const dx=first[0]-last[0],dy=first[1]-last[1];if(Math.abs(dx)<1&&Math.abs(dy)<1){collapseTailIfPossible();drawClosed=true;autoAddedCount=0;return{ok:true};}const lastIdx=drawSegments.length-1,lastSeg=drawSegments[lastIdx],prevPt=pts[pts.length-2];if(lastSeg.axis==='x'&&Math.abs(dy)<1){const nl=snap(Math.abs(dx)),ns=dx>=0?1:-1;if(nl>=100&&ns===lastSeg.sign){const trial=segmentAbsFrom({axis:'x',sign:ns,len:nl},prevPt[0],prevPt[1]);if(!conflictsWithExisting(trial,lastIdx)){lastSeg.len=nl;collapseTailIfPossible();drawClosed=true;autoAddedCount=0;return{ok:true};}}}if(lastSeg.axis==='y'&&Math.abs(dx)<1){const nl=snap(Math.abs(dy)),ns=dy>=0?1:-1;if(nl>=100&&ns===lastSeg.sign){const trial=segmentAbsFrom({axis:'y',sign:ns,len:nl},prevPt[0],prevPt[1]);if(!conflictsWithExisting(trial,lastIdx)){lastSeg.len=nl;collapseTailIfPossible();drawClosed=true;autoAddedCount=0;return{ok:true};}}}const absDx=snap(Math.abs(dx)),absDy=snap(Math.abs(dy));const sx=dx>=0?1:-1,sy=dy>=0?1:-1;function tryLPath(order){const segs=[];if(order==='XY'){if(absDx>=100)segs.push({axis:'x',sign:sx,len:absDx});if(absDy>=100)segs.push({axis:'y',sign:sy,len:absDy});}else{if(absDy>=100)segs.push({axis:'y',sign:sy,len:absDy});if(absDx>=100)segs.push({axis:'x',sign:sx,len:absDx});}const absList=[];let cx=last[0],cy=last[1];for(let i=0;i<segs.length;i++){const s=segs[i];const abs=segmentAbsFrom(s,cx,cy);const allow=(i===0)?lastIdx:-1;if(conflictsWithExisting(abs,allow))return false;absList.push({s,abs});cx=abs.x2;cy=abs.y2;}for(const{s}of absList)pushSegment(s.axis,s.sign,s.len);return true;}for(const order of['XY','YX'])if(tryLPath(order)){autoAddedCount=(absDx>=100?1:0)+(absDy>=100?1:0);drawClosed=true;return{ok:true};}return{ok:false,reason:'Невозможно чисто замкнуть.'};}
+function attemptClose(){stopEdgeStretch();const res=tryCloseContour();if(res.ok){cursorMm=null;redrawDraw(true);renderSegmentList();updateModalWarn();updateDrawHud();drawApplyBtn.disabled=false;return true;}else{redrawDraw(true);updateDrawHud();if(res.reason)showErr('⚠ '+res.reason);return false;}}
+document.addEventListener('mousemove',e=>{if(!drawModal.classList.contains('open'))return;if(drawClosed)return;if(drawStart===null)return;const rect=drawCanvas.getBoundingClientRect();if(rect.width===0||rect.height===0)return;let overX=0,overY=0;if(e.clientX<rect.left+EDGE_ZONE)overX=(rect.left+EDGE_ZONE)-e.clientX;else if(e.clientX>rect.right-EDGE_ZONE)overX=e.clientX-(rect.right-EDGE_ZONE);if(e.clientY<rect.top+EDGE_ZONE)overY=(rect.top+EDGE_ZONE)-e.clientY;else if(e.clientY>rect.bottom-EDGE_ZONE)overY=e.clientY-(rect.bottom-EDGE_ZONE);const sx=drawCanvas.width/rect.width,sy=drawCanvas.height/rect.height;const cx=(e.clientX-rect.left)*sx,cy=(e.clientY-rect.top)*sy;const newCur=computeSnappedCursor((cx-vOX)/vS,(cy-vOY)/vS);const inEdge=overX>0||overY>0;if(inEdge){const pts=walkPoints();const last=pts[pts.length-1];const dx=newCur[0]-last[0],dy=newCur[1]-last[1];let axis,sign,curLen;if(Math.abs(dx)>=Math.abs(dy)){axis='x';sign=dx>=0?1:-1;curLen=Math.abs(dx);}else{axis='y';sign=dy>=0?1:-1;curLen=Math.abs(dy);}const ov=Math.max(overX,overY);const rate=Math.max(180,ov*5);if(!edgeStretch){edgeStretch={axis,sign,length:curLen,rate,lastTick:performance.now()};if(!stretchRAF)stretchRAF=requestAnimationFrame(tickEdgeStretch);}else{edgeStretch.axis=axis;edgeStretch.sign=sign;edgeStretch.rate=rate;if(edgeStretch.length<curLen)edgeStretch.length=curLen;}cursorMm=axis==='x'?[last[0]+sign*edgeStretch.length,last[1]]:[last[0],last[1]+sign*edgeStretch.length];redrawDraw();updateDrawHud();return;}if(edgeStretch)stopEdgeStretch();cursorMm=newCur;redrawDraw();updateDrawHud();});
+function commitCurrentWall(){if(drawClosed)return false;if(drawStart===null)return false;if(!cursorMm)return false;const seg=rubberSeg();if(!seg)return false;const manual=parseFloat(drawLengthInput.value);let len=seg.len;if(!isNaN(manual)&&manual>=100)len=manual;if(len>MAX_SEG_LEN)len=MAX_SEG_LEN;len=Math.max(100,snap(len));const pts=walkPoints();const last=pts[pts.length-1];const trial=segmentAbsFrom({axis:seg.axis,sign:seg.sign,len},last[0],last[1]);const lastIdx=drawSegments.length-1;if(conflictsWithExisting(trial,lastIdx)){showErr('⚠ Стена пересекает уже нарисованную.');return false;}pushSegment(seg.axis,seg.sign,len);stopEdgeStretch();cursorMm=null;drawLengthInput.value='';redrawDraw();renderSegmentList();updateModalWarn();updateDrawHud();drawApplyBtn.disabled=false;return true;}
+drawCanvas.addEventListener('click',e=>{if(drawClosed)return;if(drawStart===null){const[x,y]=getCanvasMouseMm(e);const s=computeSnappedCursor(x,y);drawStart=[s[0],s[1]];cursorMm=null;drawLengthInput.value='';redrawDraw(true);renderSegmentList();updateModalWarn();updateDrawHud();return;}if(edgeStretch){commitCurrentWall();return;}const[x,y]=getCanvasMouseMm(e);const s=computeSnappedCursor(x,y);if(drawSegments.length>=2){const first=walkPoints()[0];if(first&&Math.abs(s[0]-first[0])<1&&Math.abs(s[1]-first[1])<1){attemptClose();return;}}cursorMm=s;commitCurrentWall();});
+segListEl.addEventListener('click',e=>{if(drawClosed)return;if(drawStart===null)return;if(e.target.closest('button, input, textarea, select, label, a'))return;commitCurrentWall();});
+drawCanvas.addEventListener('dblclick',e=>{e.preventDefault();if(drawClosed)return;if(drawSegments.length>=2)attemptClose();});
+drawCanvas.addEventListener('contextmenu',e=>{e.preventDefault();if(drawClosed)return;stopEdgeStretch();if(drawSegments.length>0)drawSegments.pop();else drawStart=null;cursorMm=null;redrawDraw();renderSegmentList();updateModalWarn();updateDrawHud();drawApplyBtn.disabled=!(drawClosed&&drawSegments.length>=3);});
+document.addEventListener('keydown',e=>{if(!drawModal.classList.contains('open'))return;if(e.key==='Escape'||e.key==='Enter'){if(drawClosed)return;if(drawSegments.length>=2)attemptClose();e.preventDefault();}});
+drawUndoBtn.addEventListener('click',()=>{stopEdgeStretch();if(drawSegments.length>0){if(drawClosed){drawClosed=false;autoAddedCount=0;}drawSegments.pop();}else drawStart=null;cursorMm=null;redrawDraw();renderSegmentList();updateModalWarn();updateDrawHud();drawApplyBtn.disabled=!(drawClosed&&drawSegments.length>=3);});
+drawCloseContourBtn.addEventListener('click',()=>{if(drawSegments.length<2){showErr('⚠ Минимум 2 стороны.');return;}attemptClose();});
+drawClearBtn.addEventListener('click',()=>{stopEdgeStretch();drawStart=null;drawSegments=[];drawClosed=false;autoAddedCount=0;cursorMm=null;redrawDraw(true);renderSegmentList();updateModalWarn();updateDrawHud();drawApplyBtn.disabled=true;});
+drawCancelBtn.addEventListener('click',()=>{stopEdgeStretch();drawModal.classList.remove('open');});
+drawApplyBtn.addEventListener('click',()=>{if(!drawClosed||drawSegments.length<3)return;stopEdgeStretch();const pts=walkPoints();if(pts.length>2){const last=pts[pts.length-1],first=pts[0];if(Math.abs(last[0]-first[0])<1&&Math.abs(last[1]-first[1])<1)pts.pop();}roomPolygon=normalizePoly(pts);const bb=polyBBox(roomPolygon);lengthInput.value=Math.round(bb.W);widthInput.value=Math.round(bb.H);drawModal.classList.remove('open');calculate();});
+drawOpenBtn.addEventListener('click',()=>{stopEdgeStretch();if(roomPolygon){const norm=roomPolygon.map(p=>[p[0],p[1]]);if(norm.length>=3){drawStart=[norm[0][0],norm[0][1]];drawSegments=[];for(let i=0;i<norm.length;i++){const a=norm[i],b=norm[(i+1)%norm.length];const dx=b[0]-a[0],dy=b[1]-a[1];if(Math.abs(dx)>Math.abs(dy))drawSegments.push({axis:'x',sign:dx>=0?1:-1,len:Math.round(Math.abs(dx))});else drawSegments.push({axis:'y',sign:dy>=0?1:-1,len:Math.round(Math.abs(dy))});}drawClosed=true;autoAddedCount=0;}}else{drawStart=null;drawSegments=[];drawClosed=false;autoAddedCount=0;}cursorMm=null;drawLengthInput.value='';redrawDraw(true);renderSegmentList();updateModalWarn();updateDrawHud();drawApplyBtn.disabled=!drawClosed;drawModal.classList.add('open');});
+function renderSegmentList(){if(drawSegments.length===0){segListEl.innerHTML='<div class="ac-seg-empty">Пока нет ни одной стены.</div>';return;}segListEl.innerHTML=drawSegments.map((s,i)=>{let arrow='',lbl='';if(s.axis==='x'){arrow=s.sign>0?'→':'←';lbl='Стена '+(i+1)+' (гориз.)';}else{arrow=s.sign>0?'↓':'↑';lbl='Стена '+(i+1)+' (верт.)';}return '<div class="ac-seg-row"><span class="arrow">'+arrow+'</span><span class="lbl">'+lbl+'</span><input type="number" value="'+s.len+'" step="100" min="100" data-idx="'+i+'"><span>мм</span></div>';}).join('');segListEl.querySelectorAll('input').forEach(inp=>{inp.addEventListener('input',()=>{const idx=parseInt(inp.dataset.idx,10);const v=Math.max(100,parseFloat(inp.value)||100);drawSegments[idx].len=v;if(drawClosed){const p=walkPoints();const first=p[0],last=p[p.length-1];if(Math.abs(last[0]-first[0])>1||Math.abs(last[1]-first[1])>1){drawClosed=false;autoAddedCount=0;drawApplyBtn.disabled=true;}}redrawDraw();updateModalWarn();updateDrawHud();});});}
+
+// ===== i5/KP =====
+function b64enc(s){
+  return btoa(unescape(encodeURIComponent(s)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function openKpPageViaWorker(){
+  const btn = $('ac-kp-open');
+  const oldText = btn.textContent;
+  btn.textContent = '⏳ Формируем...';
+  btn.disabled = true;
+
+  try {
+    // 1. Строки: итог по проекту (все помещения) или текущее помещение
+    const totals = project.length > 0 ? computeTotals() : (currentLayout ? currentLayout.specRows : []);
+    const finalRows = [];
+    for (const r of totals) {
+      if (!r || r.kind === 'area') continue;
+      const qty = Number(r.num) || 0;
+      if (qty <= 0) continue;
+      const role = armRoleOf(r.label);
+      const suf = grRalSuffix(r.label, r._gr);
+      if (role && armCJ() && armCJ().roleRow) {
+        const rr = armCJ().roleRow(role, qty, String(r.label || ''), ARM_ROLES.map);
+        if (suf && rr && rr.label && rr.label.indexOf(suf) < 0) rr.label += suf;
+        finalRows.push(rr);
+      } else {
+        finalRows.push({
+          label: String(r.label || '') + suf,
+          qtyCalc: qty,
+          qtyReserve: 0,
+          unit: r.unit || 'шт.',
+          price: 0
+        });
+      }
+    }
+
+    // 2. Проверяем, что-то собрали?
+    if (finalRows.length === 0) {
+      alert('Ошибка: в текущем помещении нет позиций для отправки. Сначала выполните расчёт.');
+      return;
+    }
+
+    // 3. Формируем комнаты для КП (со всеми параметрами, чтобы их можно было восстановить)
+    const roomToKp = (p, i) => ({
+      name: p.name || ('Помещение ' + (i + 1)),
+      L_in: p.L_in,
+      W_in: p.W_in,
+      areaM2: p.areaM2 || 0,
+      offsetX: Number(p.offsetX) || 0,
+      offsetY: Number(p.offsetY) || 0,
+      rotation: Number(p.rotationDeg) || 0,
+      rotate90: !!p.rotated90,
+      standardMode: !!p.standardMode,
+      system: 'grilyato',
+      grSys: p.grSys || 'gl15', grCell: Number(p.grCell) || 100, grColor: p.grColor || '9003', grRal: p.grRal || '',
+      tile1200: false,
+      tileSize: '600x600',
+      frameRigid: !!p.frameRigid,
+      hangers: p.hangers !== undefined ? !!p.hangers : true,
+      hangerHeight: Number(p.hangerHeight) || 0,
+      polygon: p.polygon || null,
+      rows: (p.specRows || []).filter(r => r && r.kind !== 'area' && (Number(r.num) || 0) > 0)
+        .map(r => { const role = armRoleOf(r.label); const o = { label: armShownLabel(r.label) + grRalSuffix(r.label, p), qty: Number(r.num) || 0, unit: r.unit || 'шт.' }; if (role) o.role = role; return o; })
+    });
+    const roomsForKp = project.length > 0 ? project.map(roomToKp) : [roomToKp({
+      name: 'Помещение 1',
+      ...snapshotRoom()
+    }, 0)];
+    const metaForKp = { system: 'grilyato', ...grState(), L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2,
+      tile1200: !!currentLayout.tile1200, tileSize: currentLayout.tile1200 ? '1200x600' : '600x600',
+      frameRigid: !!currentLayout.frameRigid, polygon: currentLayout.polygon || null };
+    // сохраняем цену и резерв для позиций, которые уже были в записи журнала
+    // сопоставление по роли (или по названию для строк без роли)
+    const mergeRows = (oldRows) => {
+      const oldMap = {};
+      (Array.isArray(oldRows) ? oldRows : []).forEach(o => { if (o && (o.role || o.label)) oldMap[o.role || o.label] = o; });
+      const C = armCJ();
+      return finalRows.map(r => {
+        const o = oldMap[r.role || r.label];
+        if (!o) return r;
+        let n = { ...r, price: Number(o.price) || 0, qtyReserve: Number(o.qtyReserve) || 0 };
+        if (o.resManual) n.resManual = true;
+        if (o.packOn === false) n.packOn = false;
+        // позицию заменили в счёте через 📁 — оставляем замену, пересчитываем количество
+        if (C && r.role && o.nomId && o.nomId !== r.nomId) {
+          const def = C.roleDef(r.role) || {};
+          n.label = o.label; n.unit = o.unit; n.nomId = o.nomId;
+          n.qtyCalc = C.convertQty(r.calcQty, r.calcUnit || 'шт', o.unit, C.unitOpt ? C.unitOpt(o.nomId, o.label, o.unit, def) : { m2PerPiece: C.m2For(o.nomId, o.label, def), lenM: def.lenM });
+        }
+        return n;
+      });
+    };
+
+    // 4. Если есть JID — сохраняем в существующую запись
+    if (JID && window.CubicaJournal) {
+      const rec = window.CubicaJournal.get(JID);
+      if (rec) {
+        rec.type = 'grilyato';
+        rec.rows = mergeRows(rec.rows);
+        rec.rooms = roomsForKp;
+        rec.meta = metaForKp;
+        rec.history = rec.history || [];
+        try { rec.history.push({ at: window.CubicaJournal.nowISO(), by: window.CubicaJournal.manager(), action: 'from grilyato calculator (full sync)' }); } catch(e) {}
+        
+        window.CubicaJournal.save(rec, { assignNumber: false });
+        
+        setTimeout(() => {
+          const i5url = window.CubicaJournal.i5UrlForRecord(rec);
+          window.open(i5url, '_blank');
+          try { window.close(); } catch(e) {}
+          setTimeout(() => { if(!document.hidden) showToast('Готово!', '#1565c0'); }, 500);
+        }, 300);
+        return;
+      }
+    }
+
+    // 5. Если JID нет (запасной вариант) — создаём новую запись
+    if (window.CubicaJournal) {
+      const rec = window.CubicaJournal.create({ series: 'invoice' });
+      rec.type = 'grilyato';
+      rec.rows = finalRows;
+      rec.rooms = roomsForKp;
+      rec.meta = metaForKp;
+      
+      window.CubicaJournal.save(rec, { assignNumber: false });
+      
+      setTimeout(() => {
+        const i5url = window.CubicaJournal.i5UrlForRecord(rec);
+        window.open(i5url, '_blank');
+        try { window.close(); } catch(e) {}
+      }, 300);
+    } else {
+      alert('Журнал не подключен. Невозможно сохранить данные.');
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Ошибка: ' + e.message);
+  } finally {
+    btn.textContent = oldText;
+    btn.disabled = false;
+  }
+}
+
+if(JID && window.CubicaJournal){
+  const rec = window.CubicaJournal.get(JID);
+  if(rec && Array.isArray(rec.rooms) && rec.rooms.length){
+    currentRecordId = rec.id;
+    project = rec.rooms.map(function(r){
+      return {
+        name: r.name || 'Помещение',
+        L_in: Number(r.L_in) || 1000,
+        W_in: Number(r.W_in) || 1000,
+        offsetX: Number(r.offsetX) || 0,
+        offsetY: Number(r.offsetY) || 0,
+        rotationDeg: Number(r.rotation) || 0,
+        rotated90: !!r.rotate90,
+        standardMode: !!r.standardMode,
+        tile1200: false,
+        grSys: r.grSys || 'gl15', grCell: Number(r.grCell) || 100, grColor: r.grColor || '9003', grRal: r.grRal || '',
+        frameRigid: !!r.frameRigid,
+        hangers: r.hangers !== undefined ? !!r.hangers : true,
+        hangerHeight: Number(r.hangerHeight) || 0,
+        areaM2: Number(r.areaM2) || 0,
+        polygon: r.polygon || null,
+        specRows: [],
+      };
+    });
+    if(project.length){
+      project.forEach(function(_, i){
+        setTimeout(function(){ activateRoom(i); }, 200 + i * 300);
+      });
+      setTimeout(function(){ activateRoom(0); }, 200 + project.length * 300 + 200);
+    }
+    console.log('[k6.3] Загружено из журнала:', rec.number, project.length, 'помещ.');
+  } else {
+    console.warn('[k6.3] Запись не найдена или пуста:', JID);
+  }
+}
+
+syncHangerUI();
+syncGrUI();
+updateLabels();
+renderProjectList();
+updateWorkLabel();
+calculate();
+  
+  kpBtn.addEventListener('click', async () => {
+  if(!currentLayout){alert('Сначала расчёт.');return;}
+  if(hasUnsavedChanges()){
+    const choice = await askUnsavedChanges(project[activeRoomIndex] ? project[activeRoomIndex].name : 'Новое помещение');
+    if(choice === 'cancel') return;
+    if(choice === 'save') saveRoomSilent();
+  }
+  await openKpPageViaWorker();
+});
+
+// Восстанавливаем кнопку сброса
+resetBtn.addEventListener('click',()=>{
+  if(activeRoomIndex !== null && project[activeRoomIndex]){
+    activateRoom(activeRoomIndex);
+    showToast('↺ Возврат к сохранённому расчёту', '#1565c0');
+    return;
+  }
+  offsetXSlider.value=0;offsetYSlider.value=0;rotationSlider.value=0;
+  rotated90=false;rotate90Btn.classList.remove('active');
+  standardMode=false;standardBtn.classList.remove('active');
+  tile1200Chk.checked=false;frameRigidChk.checked=false;
+  grApplyState({grSys:'gl15',grCell:100,grColor:'9003',grRal:''});
+  hangersChk.checked=true;hangerHInput.value=0;
+  roomPolygon=null;
+  syncHangerUI();updateLabels();
+  calculate();
+  showToast('↺ Сброшено к базовым настройкам', '#1565c0');
+});
+
+})();
+</script>
+</body>
+</html>
