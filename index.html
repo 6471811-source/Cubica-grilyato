@@ -171,7 +171,8 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 <label class="ac-sel">Ячейка<select id="gr-cell"><option value="50">50×50</option><option value="75">75×75</option><option value="100" selected>100×100</option><option value="120">120×120</option><option value="150">150×150</option><option value="200">200×200</option></select></label>
 <label class="ac-sel"><span class="ac-sw" id="gr-color-sw"></span>Цвет<select id="gr-color"><option value="9003">RAL 9003 белый</option><option value="7004">RAL 7004 серый</option><option value="9005">RAL 9005 чёрный</option><option value="ral">RAL под заказ</option></select></label>
 <label class="ac-sel" id="gr-ral-wrap" style="display:none">RAL<input type="text" id="gr-ral" placeholder="напр. 1015" maxlength="12"></label>
-<span style="display:none"><input type="checkbox" id="ac-tile-1200"><input type="checkbox" id="ac-frame-rigid"></span>
+<label class="ac-chk-inline" id="ac-frame-rigid-wrap" title="Несущие через 600 мм на каждой линии"><input type="checkbox" id="ac-frame-rigid"> Жесткий каркас</label>
+<span style="display:none"><input type="checkbox" id="ac-tile-1200"></span>
 <label class="ac-chk-inline"><input type="checkbox" id="ac-hangers" checked> Подвесы</label>
 <div class="ac-hanger-slider" id="ac-hanger-slider-wrap">
 <div class="ac-slider-head"><span>Высота</span></div>
@@ -281,7 +282,23 @@ const GR_COLOR_HEX={'9003':'#f4f4ee','7004':'#9b9b9b','9005':'#151515','ral':'#c
 const GR_COLOR_NAME={'9003':'RAL 9003','7004':'RAL 7004','9005':'RAL 9005','ral':'RAL'};
 function grState(){ return {grSys:grSysSel.value||'gl15', grCell:parseInt(grCellSel.value,10)||100, grColor:grColorSel.value||'9003', grRal:(grRalInput.value||'').trim()}; }
 function grApplyState(r){ if(!r) return; if(r.grSys) grSysSel.value=r.grSys; if(r.grCell) grCellSel.value=String(r.grCell); if(r.grColor) grColorSel.value=r.grColor; grRalInput.value=r.grRal||''; syncGrUI(); }
-function syncGrUI(){ grRalWrap.style.display = grColorSel.value==='ral' ? '' : 'none'; grColorSw.style.background = GR_COLOR_HEX[grColorSel.value]||'#fff'; }
+// Классика с ячейкой 50 и 75 — жесткий каркас всегда (несущие 2400 через 600)
+function grRigidForced(st){ st=st||grState(); return st.grSys!=='gl15' && st.grCell<=75; }
+let grRigidUser=null; // выбор пользователя до принудительного включения
+function syncRigidUI(){
+  const forced=grRigidForced();
+  if(forced){
+    if(!frameRigidChk.disabled) grRigidUser=frameRigidChk.checked;
+    frameRigidChk.checked=true; frameRigidChk.disabled=true;
+    $('ac-frame-rigid-wrap').title='Для классического грильято с ячейкой 50×50 и 75×75 жесткий каркас обязателен';
+    $('ac-frame-rigid-wrap').style.opacity='.75';
+  } else {
+    if(frameRigidChk.disabled){ frameRigidChk.disabled=false; if(grRigidUser!==null) frameRigidChk.checked=grRigidUser; grRigidUser=null; }
+    $('ac-frame-rigid-wrap').title='Несущие через 600 мм на каждой линии';
+    $('ac-frame-rigid-wrap').style.opacity='';
+  }
+}
+function syncGrUI(){ syncRigidUI(); grRalWrap.style.display = grColorSel.value==='ral' ? '' : 'none'; grColorSw.style.background = GR_COLOR_HEX[grColorSel.value]||'#fff'; }
 function grColorText(st){ return st.grColor==='ral' ? ('RAL '+(st.grRal||'под заказ')) : GR_COLOR_NAME[st.grColor]; }
 // мам и пап в одной решётке 600×600 (и столько же каждого): 50→11, 75→7, 100→5, 120→4, 150→3, 200→2
 function grPerGrid(cell){ const C=window.CubicaJournal; if(C&&C.GR&&C.GR.perGrid) return C.GR.perGrid(cell); return Math.max(1,Math.round(600/(Number(cell)||100))-1); }
@@ -893,8 +910,9 @@ if(!roomPolygon && L_in < W_in){const _t=L_in;L_in=W_in;W_in=_t;}
 const offX_in=parseFloat(offsetXSlider.value),offY_in=parseFloat(offsetYSlider.value),rotationDeg=parseFloat(rotationSlider.value);
 tile1200Chk.checked=false;
 const isTile1200 = false;
-const isFrameRigid = !!frameRigidChk.checked;
 const GR = grState();
+syncRigidUI();
+const isFrameRigid = !!frameRigidChk.checked;
 const isClassic = GR.grSys !== 'gl15';
 MAIN_LENGTH = isClassic ? 2400 : 3600;
 
@@ -1047,7 +1065,7 @@ if(isTile1200){
 warnings.push('ℹ '+GR_SYS_NAME[GR.grSys]+' · ячейка '+GR.grCell+'×'+GR.grCell+' · '+grColorText(GR)+'. Решёток 600×600: '+gridsCount+' шт. «Мама» и «папа» — по '+perGrid+' шт на решётку'+(isClassic?'':', L-планка — 4 шт на решётку')+'.');
 if(isClassic) warnings.push('ℹ Несущая — направляющая 2400 (вместо 3600), стыки — соединителем'+(nConn?': '+nConn+' шт.':'.'));
 if(!window.CubicaJournal || !window.CubicaJournal.roleDef || !window.CubicaJournal.roleDef('gr.conn')) warnings.push('⚠ Загружена старая версия journal-core.js — обновите ядро (Cubica-journal), иначе роли грильято не работают.');
-if(false) warnings.push('🔧 Жесткий каркас: несущие 3600 через 600 мм на каждой линии, между ними поперечные 600 через 600 мм (профиль 1200 не нужен).');
+if(isFrameRigid) warnings.push('🔧 Жесткий каркас'+(grRigidForced(GR)?' (обязателен для классики с ячейкой '+GR.grCell+'×'+GR.grCell+')':'')+': несущие '+MAIN_LENGTH+' через 600 мм на каждой линии, между ними поперечные 600 через 600 мм (профиль 1200 не нужен).');
 else if(standardMode) warnings.push('📐 Расчёт по техкарте: несущие на нечётных линиях сетки. Несущих линий — '+n3600Normal+' шт.');
 else if(ilyutikApplied) warnings.push('📐 Оптимизация: несущие на чётных линиях сетки. Несущих линий — '+lay.n3600+' шт. (вместо '+n3600Normal+').');
 else warnings.push('📐 Оптимизация: перестановка не даёт выигрыша — обычное положение ('+n3600Normal+' шт.).');
@@ -1553,6 +1571,7 @@ rotationSlider.value=r.rotationDeg;
 rotated90=!!r.rotated90;rotate90Btn.classList.toggle('active',rotated90);
 standardMode=!!r.standardMode;standardBtn.classList.toggle('active',standardMode);
 tile1200Chk.checked=false;
+frameRigidChk.disabled=false; grRigidUser=null;
 frameRigidChk.checked=!!r.frameRigid;
 grApplyState(r);
 if(r.hangers!==undefined) hangersChk.checked=!!r.hangers;
@@ -1907,7 +1926,7 @@ resetBtn.addEventListener('click',()=>{
   offsetXSlider.value=0;offsetYSlider.value=0;rotationSlider.value=0;
   rotated90=false;rotate90Btn.classList.remove('active');
   standardMode=false;standardBtn.classList.remove('active');
-  tile1200Chk.checked=false;frameRigidChk.checked=false;
+  tile1200Chk.checked=false;frameRigidChk.disabled=false;grRigidUser=null;frameRigidChk.checked=false;
   grApplyState({grSys:'gl15',grCell:100,grColor:'9003',grRal:''});
   hangersChk.checked=true;hangerHInput.value=0;
   roomPolygon=null;
