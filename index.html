@@ -145,6 +145,15 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 .ac-toast.show{display:block;animation:acToastIn .3s ease-out}
 @keyframes acToastIn{from{transform:translateX(-50%) translateY(-30px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
 @media(max-width:1024px){.ac{grid-template-columns:1fr;grid-template-areas:"w" "t" "i" "s" "o" "l" "p"}.ac-pn{position:static;max-height:none}.ac-ts label,.ac-bs label{min-width:auto}.ac-val{min-width:auto}}
+.ac-re{position:fixed;inset:0;z-index:10000;background:#fff;display:none}
+.ac-re.open{display:block}
+.ac-re iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#fff}
+.ac-re-load{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:14px 'Segoe UI',Arial,sans-serif;color:#555;background:#fff;text-align:center;padding:20px}
+.ac-re-load.hide{display:none}
+.ac-re-load .bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.ac-re-load button{padding:8px 16px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:14px}
+.ac-re-load button.pr{background:#c00000;border-color:#c00000;color:#fff}
+body.ac-re-lock{overflow:hidden}
 @media(max-width:700px){.ac-draw-body{flex-direction:column}.ac-draw-wrap{width:100%;align-self:stretch}.ac-seg-list{flex:0 0 auto;width:100%;max-height:180px}}
 @media(max-width:640px){.ac{padding:16px}.ac-mr{grid-template-columns:60px minmax(0,1fr)}.ac-ts,.ac-bs{flex-wrap:wrap}.ac-ts label,.ac-bs label{min-width:100%}.ac-in input[type=number]{width:100%}.ac-in button{margin-left:0}.ac-modal{padding:8px}.ac-modal-inner{padding:14px}}
 </style></head><body>
@@ -222,6 +231,7 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 </main>
 <footer class="ft">© 2026 CUBICA.BY · Потолок Грильято</footer>
 
+<div class="ac-re" id="ac-re"><div class="ac-re-load" id="ac-re-load"><div id="ac-re-msg">Загрузка редактора помещений…</div><div class="bar" id="ac-re-bar" style="display:none"><button type="button" id="ac-re-retry">Повторить</button><button type="button" id="ac-re-old">Простое черчение</button><button type="button" class="pr" id="ac-re-back">Вернуться в калькулятор</button></div></div></div>
 <div class="ac-modal" id="ac-draw-modal">
 <div class="ac-modal-inner">
 <h3 class="ac-modal-title">✏️ Начертить помещение</h3>
@@ -457,7 +467,7 @@ function resetForNewRoom(){
   syncHangerUI();
   updateLabels();
 
-  roomPolygon=null;
+  roomPolygon=null;roomShape=null;
   activeRoomIndex=null;
   lastSavedSnapshot = null;
   calculate();
@@ -895,6 +905,7 @@ n3600,n1200,n600,n600Side,beamsInRoom,warnWide,sum3600Length,excludedOnWall,clip
 
 let currentLayout=null,currentView='2d',threeInitialized=false,rotated90=false,standardMode=false;
 let roomPolygon=null;
+let roomShape=null; // контур из редактора помещений (с дугами)
 let threeRenderer,threeScene,threeCamera,threeControls;
 let threeRoomGroup,threeGridPivot,threeTilesGroup,threeHangersGroup,threeCeilingMesh;
 let project=[],activeRoomIndex=null,specMode='current';
@@ -1482,6 +1493,7 @@ hangerHeight:parseFloat(hangerHInput.value)||0,
 ...grState(),
 areaM2:currentLayout.areaM2,
 polygon:roomPolygon?roomPolygon.map(p=>[p[0],p[1]]):null,
+shape:roomPolygon&&roomShape?cloneShape(roomShape):null,
 specRows:currentLayout.specRows.map(r=>({...r}))
 };
 }
@@ -1577,7 +1589,7 @@ grApplyState(r);
 if(r.hangers!==undefined) hangersChk.checked=!!r.hangers;
 if(r.hangerHeight!==undefined) hangerHInput.value=r.hangerHeight;
 syncHangerUI();
-roomPolygon=r.polygon?r.polygon.map(p=>[p[0],p[1]]):null;
+roomPolygon=r.polygon?r.polygon.map(p=>[p[0],p[1]]):null;roomShape=(r.polygon&&r.shape)?cloneShape(r.shape):null;
 updateLabels();calculate();
 // помещение загружено из журнала без спецификации — заполняем её расчётом
 if(currentLayout && (!r.specRows || !r.specRows.length)){
@@ -1628,8 +1640,8 @@ rotationVal.textContent=rot===0?'0°':(rot>0?rot+'° по час. ↻':Math.abs(
 offsetXSlider.addEventListener('input',()=>{updateLabels();calculate();});
 offsetYSlider.addEventListener('input',()=>{updateLabels();calculate();});
 rotationSlider.addEventListener('input',()=>{updateLabels();calculate();});
-lengthInput.addEventListener('input',()=>{roomPolygon=null;calculate();});
-widthInput.addEventListener('input',()=>{roomPolygon=null;calculate();});
+lengthInput.addEventListener('input',()=>{roomPolygon=null;roomShape=null;calculate();});
+widthInput.addEventListener('input',()=>{roomPolygon=null;roomShape=null;calculate();});
 rotate90Btn.addEventListener('click',()=>{rotated90=!rotated90;rotate90Btn.classList.toggle('active',rotated90);calculate();});
 standardBtn.addEventListener('click',()=>{standardMode=!standardMode;standardBtn.classList.toggle('active',standardMode);calculate();});
 addBtn.addEventListener('click',newRoomAction);
@@ -1716,8 +1728,51 @@ drawUndoBtn.addEventListener('click',()=>{stopEdgeStretch();if(drawSegments.leng
 drawCloseContourBtn.addEventListener('click',()=>{if(drawSegments.length<2){showErr('⚠ Минимум 2 стороны.');return;}attemptClose();});
 drawClearBtn.addEventListener('click',()=>{stopEdgeStretch();drawStart=null;drawSegments=[];drawClosed=false;autoAddedCount=0;cursorMm=null;redrawDraw(true);renderSegmentList();updateModalWarn();updateDrawHud();drawApplyBtn.disabled=true;});
 drawCancelBtn.addEventListener('click',()=>{stopEdgeStretch();drawModal.classList.remove('open');});
-drawApplyBtn.addEventListener('click',()=>{if(!drawClosed||drawSegments.length<3)return;stopEdgeStretch();const pts=walkPoints();if(pts.length>2){const last=pts[pts.length-1],first=pts[0];if(Math.abs(last[0]-first[0])<1&&Math.abs(last[1]-first[1])<1)pts.pop();}roomPolygon=normalizePoly(pts);const bb=polyBBox(roomPolygon);lengthInput.value=Math.round(bb.W);widthInput.value=Math.round(bb.H);drawModal.classList.remove('open');calculate();});
-drawOpenBtn.addEventListener('click',()=>{stopEdgeStretch();if(roomPolygon){const norm=roomPolygon.map(p=>[p[0],p[1]]);if(norm.length>=3){drawStart=[norm[0][0],norm[0][1]];drawSegments=[];for(let i=0;i<norm.length;i++){const a=norm[i],b=norm[(i+1)%norm.length];const dx=b[0]-a[0],dy=b[1]-a[1];if(Math.abs(dx)>Math.abs(dy))drawSegments.push({axis:'x',sign:dx>=0?1:-1,len:Math.round(Math.abs(dx))});else drawSegments.push({axis:'y',sign:dy>=0?1:-1,len:Math.round(Math.abs(dy))});}drawClosed=true;autoAddedCount=0;}}else{drawStart=null;drawSegments=[];drawClosed=false;autoAddedCount=0;}cursorMm=null;drawLengthInput.value='';redrawDraw(true);renderSegmentList();updateModalWarn();updateDrawHud();drawApplyBtn.disabled=!drawClosed;drawModal.classList.add('open');});
+drawApplyBtn.addEventListener('click',()=>{if(!drawClosed||drawSegments.length<3)return;stopEdgeStretch();const pts=walkPoints();if(pts.length>2){const last=pts[pts.length-1],first=pts[0];if(Math.abs(last[0]-first[0])<1&&Math.abs(last[1]-first[1])<1)pts.pop();}roomPolygon=normalizePoly(pts);roomShape=null;const bb=polyBBox(roomPolygon);lengthInput.value=Math.round(bb.W);widthInput.value=Math.round(bb.H);drawModal.classList.remove('open');calculate();});
+function openBuiltinDraw(){stopEdgeStretch();if(roomPolygon){const norm=roomPolygon.map(p=>[p[0],p[1]]);if(norm.length>=3){drawStart=[norm[0][0],norm[0][1]];drawSegments=[];for(let i=0;i<norm.length;i++){const a=norm[i],b=norm[(i+1)%norm.length];const dx=b[0]-a[0],dy=b[1]-a[1];if(Math.abs(dx)>Math.abs(dy))drawSegments.push({axis:'x',sign:dx>=0?1:-1,len:Math.round(Math.abs(dx))});else drawSegments.push({axis:'y',sign:dy>=0?1:-1,len:Math.round(Math.abs(dy))});}drawClosed=true;autoAddedCount=0;}}else{drawStart=null;drawSegments=[];drawClosed=false;autoAddedCount=0;}cursorMm=null;drawLengthInput.value='';redrawDraw(true);renderSegmentList();updateModalWarn();updateDrawHud();drawApplyBtn.disabled=!drawClosed;drawModal.classList.add('open');}
+/* ===== Редактор помещений CUBICA: открывается на весь экран поверх калькулятора ===== */
+const ROOM_EDITOR_URL=window.CUBICA_ROOM_EDITOR_URL||'https://6471811-source.github.io/Cubica-room-editor/';
+const reBox=$('ac-re'),reLoad=$('ac-re-load'),reMsg=$('ac-re-msg'),reBar=$('ac-re-bar');
+let reFrame=null,reReady=false,reTimer=null,reHist=false;
+function cloneShape(sh){if(!sh||!Array.isArray(sh.pts))return null;return{pts:sh.pts.map(p=>({x:+p.x,y:+p.y,b:+p.b||0}))};}
+function reRoomName(){const r=(activeRoomIndex!==null&&project[activeRoomIndex])?project[activeRoomIndex]:null;return r&&r.name?r.name:'Помещение '+(project.length+1);}
+function reInput(){const o={target:'cubica-room-editor',type:'load',calc:'grilyato',name:reRoomName()};
+  if(roomPolygon&&roomShape)o.shape=cloneShape(roomShape);
+  else if(roomPolygon)o.polygon=roomPolygon.map(p=>[p[0],p[1]]);
+  else{o.L=Math.max(100,Math.round(parseFloat(lengthInput.value)||1000));o.W=Math.max(100,Math.round(parseFloat(widthInput.value)||1000));}
+  return o;}
+function reSend(){if(reFrame&&reFrame.contentWindow)reFrame.contentWindow.postMessage(reInput(),'*');}
+function reFail(){reMsg.textContent='Редактор помещений не открылся. Проверьте интернет и нажмите «Повторить».';reBar.style.display='';reLoad.classList.remove('hide');}
+function reCreate(){if(reFrame)reFrame.remove();reReady=false;reFrame=document.createElement('iframe');reFrame.title='Редактор помещений CUBICA';reFrame.allow='clipboard-write';reFrame.src=ROOM_EDITOR_URL+(ROOM_EDITOR_URL.indexOf('?')<0?'?':'&')+'embed=1';reBox.insertBefore(reFrame,reLoad);
+  clearTimeout(reTimer);reTimer=setTimeout(()=>{if(!reReady)reFail();},15000);}
+function openRoomEditor(){stopEdgeStretch();reMsg.textContent='Загрузка редактора помещений…';reBar.style.display='none';
+  reBox.classList.add('open');document.body.classList.add('ac-re-lock');
+  if(!reHist){try{history.pushState({acRoomEditor:1},'');reHist=true;}catch(e){}}
+  if(!reFrame)reCreate();
+  if(reReady){reLoad.classList.add('hide');reSend();}else reLoad.classList.remove('hide');}
+function closeRoomEditor(fromPop){if(!reBox.classList.contains('open'))return;reBox.classList.remove('open');document.body.classList.remove('ac-re-lock');
+  if(reHist){reHist=false;if(!fromPop){try{history.back();}catch(e){}}}}
+window.addEventListener('popstate',()=>{if(reBox.classList.contains('open'))closeRoomEditor(true);else reHist=false;});
+function applyEditorRoom(room){if(!room||!Array.isArray(room.polygon)||room.polygon.length<3){showToast('⚠ Контур не получен','#c00000');return;}
+  let poly=normalizePoly(room.polygon.map(p=>[+p[0],+p[1]]));
+  if(poly.length>3){const f=poly[0],l=poly[poly.length-1];if(Math.abs(f[0]-l[0])<0.5&&Math.abs(f[1]-l[1])<0.5)poly.pop();}
+  const bb=polyBBox(poly);const Lb=Math.round(bb.W),Wb=Math.round(bb.H);
+  const onBox=poly.every(p=>(Math.abs(p[0])<0.5||Math.abs(p[0]-bb.W)<0.5)&&(Math.abs(p[1])<0.5||Math.abs(p[1]-bb.H)<0.5));
+  if(poly.length===4&&onBox){roomPolygon=null;roomShape=null;} // обычный прямоугольник — считаем как по длине и ширине
+  else{roomPolygon=poly;roomShape=cloneShape(room.shape);}
+  lengthInput.value=Lb;widthInput.value=Wb;
+  calculate();
+  let note='✓ Помещение из редактора: '+Lb+' × '+Wb+' мм';
+  if(Array.isArray(room.holes)&&room.holes.length)note+='. Колонны в раскладке не вычитаются — учтите их вручную';
+  showToast(note,'#2e7d32');}
+window.addEventListener('message',e=>{const d=e.data;if(!d||d.source!=='cubica-room-editor')return;if(!reFrame||e.source!==reFrame.contentWindow)return;
+  if(d.type==='ready'){reReady=true;clearTimeout(reTimer);if(reBox.classList.contains('open')){reLoad.classList.add('hide');reSend();}return;}
+  if(d.type==='cancel'){closeRoomEditor(false);return;}
+  if(d.type==='apply'){closeRoomEditor(false);applyEditorRoom(d.room);if(d.all&&Array.isArray(d.rooms)&&d.rooms.length>1)setTimeout(()=>showToast('В калькулятор передано выбранное помещение. Остальные начертите отдельно через «+ Новое помещение»','#1565c0'),1600);}});
+$('ac-re-retry').addEventListener('click',()=>{reMsg.textContent='Загрузка редактора помещений…';reBar.style.display='none';reCreate();});
+$('ac-re-back').addEventListener('click',()=>closeRoomEditor(false));
+$('ac-re-old').addEventListener('click',()=>{closeRoomEditor(false);openBuiltinDraw();});
+drawOpenBtn.addEventListener('click',openRoomEditor);
 function renderSegmentList(){if(drawSegments.length===0){segListEl.innerHTML='<div class="ac-seg-empty">Пока нет ни одной стены.</div>';return;}segListEl.innerHTML=drawSegments.map((s,i)=>{let arrow='',lbl='';if(s.axis==='x'){arrow=s.sign>0?'→':'←';lbl='Стена '+(i+1)+' (гориз.)';}else{arrow=s.sign>0?'↓':'↑';lbl='Стена '+(i+1)+' (верт.)';}return '<div class="ac-seg-row"><span class="arrow">'+arrow+'</span><span class="lbl">'+lbl+'</span><input type="number" value="'+s.len+'" step="100" min="100" data-idx="'+i+'"><span>мм</span></div>';}).join('');segListEl.querySelectorAll('input').forEach(inp=>{inp.addEventListener('input',()=>{const idx=parseInt(inp.dataset.idx,10);const v=Math.max(100,parseFloat(inp.value)||100);drawSegments[idx].len=v;if(drawClosed){const p=walkPoints();const first=p[0],last=p[p.length-1];if(Math.abs(last[0]-first[0])>1||Math.abs(last[1]-first[1])>1){drawClosed=false;autoAddedCount=0;drawApplyBtn.disabled=true;}}redrawDraw();updateModalWarn();updateDrawHud();});});}
 
 // ===== i5/KP =====
@@ -1781,6 +1836,7 @@ async function openKpPageViaWorker(){
       hangers: p.hangers !== undefined ? !!p.hangers : true,
       hangerHeight: Number(p.hangerHeight) || 0,
       polygon: p.polygon || null,
+      shape: p.polygon && p.shape ? cloneShape(p.shape) : null,
       rows: (p.specRows || []).filter(r => r && r.kind !== 'area' && (Number(r.num) || 0) > 0)
         .map(r => { const role = armRoleOf(r.label); const o = { label: armShownLabel(r.label) + grRalSuffix(r.label, p), qty: Number(r.num) || 0, unit: r.unit || 'шт.' }; if (role) o.role = role; return o; })
     });
@@ -1790,7 +1846,7 @@ async function openKpPageViaWorker(){
     }, 0)];
     const metaForKp = { system: 'grilyato', ...grState(), L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2,
       tile1200: !!currentLayout.tile1200, tileSize: currentLayout.tile1200 ? '1200x600' : '600x600',
-      frameRigid: !!currentLayout.frameRigid, polygon: currentLayout.polygon || null };
+      frameRigid: !!currentLayout.frameRigid, polygon: currentLayout.polygon || null, shape: currentLayout.polygon && roomShape ? cloneShape(roomShape) : null };
     // сохраняем цену и резерв для позиций, которые уже были в записи журнала
     // сопоставление по роли (или по названию для строк без роли)
     const mergeRows = (oldRows) => {
@@ -1884,6 +1940,7 @@ if(JID && window.CubicaJournal){
         hangerHeight: Number(r.hangerHeight) || 0,
         areaM2: Number(r.areaM2) || 0,
         polygon: r.polygon || null,
+        shape: r.polygon && r.shape ? cloneShape(r.shape) : null,
         specRows: [],
       };
     });
@@ -1929,7 +1986,7 @@ resetBtn.addEventListener('click',()=>{
   tile1200Chk.checked=false;frameRigidChk.disabled=false;grRigidUser=null;frameRigidChk.checked=false;
   grApplyState({grSys:'gl15',grCell:100,grColor:'9003',grRal:''});
   hangersChk.checked=true;hangerHInput.value=0;
-  roomPolygon=null;
+  roomPolygon=null;roomShape=null;
   syncHangerUI();updateLabels();
   calculate();
   showToast('↺ Сброшено к базовым настройкам', '#1565c0');
