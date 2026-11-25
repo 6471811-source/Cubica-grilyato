@@ -1246,6 +1246,12 @@ const wg=boxGeo(WEB_W,WEB_H,len);wg.__cached=true;
 const w=new THREE.Mesh(wg,mat);w.position.y=FLANGE_H+WEB_H/2;w.userData=ud;g.add(w);
 return g;
 }
+/* ===== обрезка плит по контуру помещения (наклонные и радиусные стены) ===== */
+function reClipRect(poly,x0,y0,x1,y1){let out=poly;const E=[[p=>p[0]>=x0,(a,b)=>{const t=(x0-a[0])/(b[0]-a[0]);return[x0,a[1]+t*(b[1]-a[1])];}],[p=>p[0]<=x1,(a,b)=>{const t=(x1-a[0])/(b[0]-a[0]);return[x1,a[1]+t*(b[1]-a[1])];}],[p=>p[1]>=y0,(a,b)=>{const t=(y0-a[1])/(b[1]-a[1]);return[a[0]+t*(b[0]-a[0]),y0];}],[p=>p[1]<=y1,(a,b)=>{const t=(y1-a[1])/(b[1]-a[1]);return[a[0]+t*(b[0]-a[0]),y1];}]];for(const[ins,cut]of E){const inp=out;out=[];if(!inp.length)break;for(let i=0;i<inp.length;i++){const cur=inp[i],prev=inp[(i+inp.length-1)%inp.length];const ci=ins(cur),pi=ins(prev);if(ci){if(!pi)out.push(cut(prev,cur));out.push(cur);}else if(pi)out.push(cut(prev,cur));}}const r=[];for(const p of out){const q=r[r.length-1];if(!q||Math.abs(q[0]-p[0])>0.05||Math.abs(q[1]-p[1])>0.05)r.push(p);}if(r.length>1){const a=r[0],b=r[r.length-1];if(Math.abs(a[0]-b[0])<=0.05&&Math.abs(a[1]-b[1])<=0.05)r.pop();}return r;}
+function reClipSeg(poly,x1,y1,x2,y2){const n=poly.length,dx=x2-x1,dy=y2-y1;const ts=[0,1];for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];const ex=b[0]-a[0],ey=b[1]-a[1];const den=dx*ey-dy*ex;if(Math.abs(den)<1e-9)continue;const t=((a[0]-x1)*ey-(a[1]-y1)*ex)/den;const u=((a[0]-x1)*dy-(a[1]-y1)*dx)/den;if(t>1e-6&&t<1-1e-6&&u>=-1e-9&&u<=1+1e-9)ts.push(t);}ts.sort((p,q)=>p-q);const out=[];for(let i=0;i<ts.length-1;i++){const t0=ts[i],t1=ts[i+1];if(t1-t0<1e-6)continue;const tm=(t0+t1)/2;if(pointInPoly(poly,x1+tm*dx,y1+tm*dy))out.push([x1+t0*dx,y1+t0*dy,x1+t1*dx,y1+t1*dy]);}return out;}
+function reArea(p){let s=0;for(let i=0,n=p.length;i<n;i++){const a=p[i],b=p[(i+1)%n];s+=a[0]*b[1]-b[0]*a[1];}return Math.abs(s)/2;}
+function rePlateGeo(pts,T){const sh=new THREE.Shape(pts.map(p=>new THREE.Vector2(p[0],p[1])));const g=new THREE.ExtrudeGeometry(sh,{depth:T,bevelEnabled:false,curveSegments:1});g.rotateX(Math.PI/2);g.translate(0,T/2,0);return g;}
+function reUV(g,ox,oz,P){const pos=g.attributes.position,uv=g.attributes.uv;if(!uv)return;for(let i=0;i<uv.count;i++)uv.setXY(i,(pos.getX(i)-ox)/P,(pos.getZ(i)-oz)/P);uv.needsUpdate=true;}
 function update3D(){
 if(!threeInitialized||!currentLayout)return;
 const {L,W,L_in,W_in,lay,positionsX,totalRot,polygon,frameRigid,tile1200}=currentLayout;
@@ -1278,6 +1284,7 @@ threeGridPivot.rotation.y=-totalRot*Math.PI/180;
 const toLoc=(xg,zg)=>[xg-Lm/2,zg-Wm/2];
 
 const cosA=Math.cos(totalRot*Math.PI/180), sinA=Math.sin(totalRot*Math.PI/180);
+const polyGrid=polygon?polygon.map(p=>{const dx=p[0]-L_in/2,dy=p[1]-W_in/2;return[dx*cosA+dy*sinA+L/2,-dx*sinA+dy*cosA+W/2];}):null;
 
 if(polygon){
 const pts=polygon.map(p=>new THREE.Vector3(p[0]/1000,0.001,p[1]/1000));
@@ -1308,33 +1315,24 @@ for(const tl of lay.tiles){
   const tw=tl.w-2*gapMM, th=tl.h-2*gapMM;
   if(tw<=0||th<=0) continue;
   const cxmm=tl.x0+tl.w/2, cymm=tl.y0+tl.h/2;
-  let lx, lz;
+  let lx, lz, clipGeo=null;
   if(polygon){
-    // для 1200х600 проверяем центр и обе половины плиты
-    const probes=[[cxmm,cymm]];
-    if(tile1200){
-      if(tl.w>tl.h){probes.push([cxmm-tl.w/4,cymm],[cxmm+tl.w/4,cymm]);}
-      else{probes.push([cxmm,cymm-tl.h/4],[cxmm,cymm+tl.h/4]);}
-    }
-    let ok=false;
-    for(const [px,py] of probes){
-      const dxw=px-L/2, dyw=py-W/2;
-      const dX=dxw*cosA-dyw*sinA+L_in/2, dY=dxw*sinA+dyw*cosA+W_in/2;
-      if(pointInPoly(polygon,dX,dY)){ok=true;break;}
-    }
-    if(!ok) continue;
-    const dxw = cxmm - L/2, dyw = cymm - W/2;
-    const dispX = dxw*cosA - dyw*sinA + L_in/2;
-    const dispY = dxw*sinA + dyw*cosA + W_in/2;
-    const dxp = dispX/1000 - LmRoom/2;
-    const dzp = dispY/1000 - WmRoom/2;
-    lx = dxp*cosA + dzp*sinA;
-    lz = -dxp*sinA + dzp*cosA;
+    // плита обрезается по контуру помещения — как в 2D
+    const rx0=tl.x0+gapMM, ry0=tl.y0+gapMM;
+    const cp=reClipRect(polyGrid,rx0,ry0,rx0+tw,ry0+th);
+    if(cp.length<3) continue;
+    const ar=reArea(cp);
+    if(ar<400) continue;
+    if(ar<tw*th*0.998){
+      clipGeo=rePlateGeo(cp.map(p=>[(p[0]-L/2)/1000,(p[1]-W/2)/1000]),PLATE_T);
+      reUV(clipGeo,(rx0-L/2)/1000,(ry0-W/2)/1000,TILE_PANEL/1000);
+      clipGeo.__grUV=true; lx=0; lz=0;
+    } else { const p=toLoc(cxmm/1000,cymm/1000); lx=p[0]; lz=p[1]; }
   } else {
     const p=toLoc(cxmm/1000,cymm/1000); lx=p[0]; lz=p[1];
   }
-  const pGeo = boxGeo(tw/1000, PLATE_T, th/1000);
-  pGeo.__cached = true; grScaleUV(pGeo, tw, th);
+  const pGeo = clipGeo || boxGeo(tw/1000, PLATE_T, th/1000);
+  pGeo.__cached = !clipGeo; grScaleUV(pGeo, tw, th);
   const mesh=new THREE.Mesh(pGeo,mPlate);
   mesh.position.set(lx,plateY,lz);
   mesh.userData={title:'Решётка грильято',size:'600 × 600 мм',qty:'—',spacing:'ячейка '+((currentLayout.gr&&currentLayout.gr.grCell)||100)+'×'+((currentLayout.gr&&currentLayout.gr.grCell)||100)+' мм'};
@@ -1349,7 +1347,7 @@ if(it.type===3600){mat=mMain;ud=ud3600;}
 else if(it.type===1200){mat=m1200;ud=ud1200;}
 else{mat=m600;ud=ud600;}
 if(polygon){
-const segs=lay.clipItem(it);
+const segs=[];for(const s0 of lay.clipItem(it))segs.push(...reClipSeg(polygon,s0[0],s0[1],s0[2],s0[3]));
 for(const seg of segs){
 const x1=seg[0],y1=seg[1],x2=seg[2],y2=seg[3];
 const cx=(x1+x2)/2/1000, cz=(y1+y2)/2/1000;
